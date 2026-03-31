@@ -1,4 +1,4 @@
-[job-hunter-os-README.md](https://github.com/user-attachments/files/26389654/job-hunter-os-README.md)
+[README.md](https://github.com/user-attachments/files/26389654/README.md)
 # Job Hunter OS
 
 An AI-powered job search command center built as a single HTML file. No backend, no install, no accounts — open it in a browser and go.
