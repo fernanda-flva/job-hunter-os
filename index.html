@@ -637,6 +637,101 @@
     .two-col { grid-template-columns: 1fr; }
     .module-grid { grid-template-columns: 1fr; }
   }
+
+    /* ── Flow CTA bar ── */
+    .flow-cta-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, rgba(255,193,94,0.06) 0%, var(--surface) 100%);
+      border: 1px solid rgba(255,193,94,0.25);
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+    .flow-cta-label {
+      flex: 1;
+      min-width: 180px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .btn-flow {
+      background: var(--accent);
+      color: var(--ink, #0f1a20);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .btn-flow:hover { opacity: 0.88; }
+    .btn-log {
+      background: rgba(126,203,161,0.12);
+      color: #7ecba1;
+      border: 1px solid rgba(126,203,161,0.3);
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-log:hover { background: rgba(126,203,161,0.2); }
+
+    /* ── Flow progress bar ── */
+    .flow-bar {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .flow-bar-inner {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .flow-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      min-width: 70px;
+    }
+    .flow-step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .flow-step.active .flow-step-circle { background: var(--accent); border-color: var(--accent); color: #0f1a20; }
+    .flow-step.done .flow-step-circle { background: rgba(126,203,161,0.15); border-color: #7ecba1; color: #7ecba1; }
+    .flow-step-label { font-family: 'DM Mono', monospace; font-size: 0.58rem; color: var(--text-dim); text-align: center; letter-spacing: 0.04em; text-transform: uppercase; }
+    .flow-step.active .flow-step-label { color: var(--accent); }
+    .flow-step.done .flow-step-label { color: #7ecba1; }
+    .flow-connector { flex: 1; height: 2px; background: var(--border); min-width: 12px; }
+    .flow-connector.done { background: #7ecba1; }
+    .flow-actions { display: flex; gap: 8px; justify-content: flex-end; }
 </style>
 </head>
 <body>
@@ -958,22 +1053,64 @@ function saveSetup() {
 }
 
 // ─── ANALYZER ────────────────────────────────────────────────────────────────
+window.renderFlowBar = function(currentStep) {
+  const steps = [
+    { id:'analyze', label:'Role Analysis', icon:'🔍' },
+    { id:'resume',  label:'Resume Tailor', icon:'📄' },
+    { id:'rescore', label:'ATS Re-Score',  icon:'📊' },
+    { id:'cover',   label:'Cover Letter',  icon:'✉️' },
+    { id:'log',     label:'Log App',       icon:'📋' }
+  ];
+  const idx = steps.findIndex(s => s.id === currentStep);
+  const prevStep = idx > 0 ? steps[idx-1] : null;
+  return `<div class="flow-bar">
+    <div class="flow-bar-inner">
+      ${steps.map((s,i) => `
+        <div class="flow-step ${i<idx?'done':i===idx?'active':'pending'}"
+             onclick="${i<idx?`showFlowStep('${s.id}')`:''}"
+             style="${i<idx?'cursor:pointer':''}">
+          <div class="flow-step-circle">${i<idx?'✓':s.icon}</div>
+          <div class="flow-step-label">${s.label}</div>
+        </div>
+        ${i<steps.length-1?`<div class="flow-connector ${i<idx?'done':''}"></div>`:''}`).join('')}
+    </div>
+    <div class="flow-actions">
+      ${prevStep?`<button class="btn btn-secondary btn-sm" onclick="showFlowStep('${prevStep.id}')">← Back</button>`:''}
+      <button class="btn btn-secondary btn-sm" onclick="startNewFlow()">↺ New Role</button>
+      ${currentStep!=='analyze'?`<button class="btn btn-secondary btn-sm" onclick="showModule('analyzer')">Exit Flow</button>`:''}
+    </div>
+  </div>`;
+};
+
 function renderAnalyzer() {
+  const inFlow = state.flow && state.flow.active;
   const el = document.getElementById('main-content');
   el.innerHTML = `
     <div class="fade-in">
+      ${inFlow ? renderFlowBar('analyze') : ''}
       <div class="module-header">
-        <div class="module-tag">// MODULE 01</div>
+        <div class="module-tag">${inFlow ? '// STEP 1 OF 4' : '// MODULE 01'}</div>
         <div class="module-title">Role Analyzer</div>
-        <p class="module-desc">Paste a job description. Get instant intel on salary, H1B, remote policy, fit score, red flags, and what to ask for.</p>
+        <p class="module-desc">Paste a job description. Get instant intel on salary, H1B, fit score, red flags, and what to ask — then move straight to tailoring your resume.</p>
       </div>
 
       ${!state.resume ? `<div class="flag info">💡 Tip: Add your resume in <strong>My Profile</strong> for a personalized fit score.</div>` : ''}
 
       <div class="card">
-        <div class="card-title">📋 Job Description</div>
+        <div class="card-title">📋 Role Details</div>
+        <div class="two-col">
+          <div class="field">
+            <div class="field-label">Company Name</div>
+            <input type="text" id="ana-company" placeholder="e.g. Uber" value="${state.flow && state.flow.company ? state.flow.company : ''}" />
+          </div>
+          <div class="field">
+            <div class="field-label">Role Title</div>
+            <input type="text" id="ana-role" placeholder="e.g. Senior PM - Growth" value="${state.flow && state.flow.roleTitle ? state.flow.roleTitle : ''}" />
+          </div>
+        </div>
         <div class="field">
-          <textarea id="ana-jd" rows="10" placeholder="Paste the full job description here..."></textarea>
+          <div class="field-label">Job Description</div>
+          <textarea id="ana-jd" rows="10" placeholder="Paste the full job description here...">${state.flow && state.flow.jd ? state.flow.jd : ''}</textarea>
         </div>
         <button class="btn btn-primary" onclick="runAnalyzer()" id="ana-btn">
           <span>Analyze Role</span>
@@ -992,9 +1129,19 @@ function renderAnalyzer() {
             <button class="btn btn-secondary btn-sm" data-copy="ana-output" onclick="copyText('ana-output')">Copy</button>
           </div>
         </div>
+        <div class="flow-cta-bar" id="ana-flow-cta" style="display:none">
+          <span class="flow-cta-label">Analysis done. Tailor your resume for this role →</span>
+          <button class="btn-log" onclick="logApplicationQuick('analyzed')">📋 Log</button>
+          <button class="btn-flow" onclick="proceedToResumeTailor()">Tailor Resume →</button>
+        </div>
       </div>
     </div>`;
 }
+
+window.proceedToResumeTailor = function() {
+  state.flow.active = true;
+  showFlowStep('resume');
+};
 
 async function runAnalyzer() {
   const jd = document.getElementById('ana-jd').value.trim();
@@ -1050,27 +1197,36 @@ ${jd}`;
   btn.innerHTML = '<span>Re-analyze</span>';
 
   if (result) {
-    // Parse out a fit score if mentioned
+    // Save into flow state so subsequent steps can use it
+    const company = document.getElementById('ana-company').value.trim();
+    const roleTitle = document.getElementById('ana-role').value.trim();
+    const jd = document.getElementById('ana-jd').value.trim();
+    if (!state.flow) state.flow = {};
+    state.flow.jd = jd;
+    state.flow.company = company;
+    state.flow.roleTitle = roleTitle;
+    state.flow.analysisResult = result;
+
+    // Parse scores
     const fitMatch = result.match(/fit score[:\s]*(\d+)/i);
     const h1bMatch = result.match(/h1b[^:]*:\s*(HIGH|MEDIUM|LOW|NOT MENTIONED)/i);
+    const atsMatch = result.match(/Overall:\s*(\d+)\/100/i);
 
     document.getElementById('score-grid').innerHTML = `
-      <div class="score-card">
-        <div class="score-label">Fit Score</div>
-        <div class="score-value ${fitMatch ? (parseInt(fitMatch[1]) >= 7 ? 'high' : parseInt(fitMatch[1]) >= 5 ? 'med' : 'low') : 'info'}">${fitMatch ? fitMatch[1] + '/10' : '—'}</div>
-      </div>
+      ${atsMatch ? `<div class="score-card"><div class="score-label">ATS Score</div><div class="score-value ${parseInt(atsMatch[1])>=75?'high':parseInt(atsMatch[1])>=55?'med':'low'}">${atsMatch[1]}/100</div></div>` : ''}
+      ${fitMatch ? `<div class="score-card"><div class="score-label">Fit Score</div><div class="score-value ${parseInt(fitMatch[1])>=7?'high':parseInt(fitMatch[1])>=5?'med':'low'}">${fitMatch[1]}/10</div></div>` : ''}
       <div class="score-card">
         <div class="score-label">H1B Likelihood</div>
-        <div class="score-value ${h1bMatch ? (h1bMatch[1] === 'HIGH' ? 'high' : h1bMatch[1] === 'MEDIUM' ? 'med' : 'low') : 'info'}">${h1bMatch ? h1bMatch[1] : 'CHECK'}</div>
+        <div class="score-value ${h1bMatch ? (h1bMatch[1]==='HIGH'?'high':h1bMatch[1]==='MEDIUM'?'med':'low') : 'info'}">${h1bMatch ? h1bMatch[1] : 'CHECK'}</div>
       </div>
       <div class="score-card">
         <div class="score-label">Market</div>
-        <div class="score-value info">${state.profile.location.split(',')[0].split(' ').slice(-1)[0]}</div>
-      </div>
-      <div class="score-card">
-        <div class="score-label">Your Level</div>
-        <div class="score-value info">Dir+</div>
+        <div class="score-value info">${state.profile.location.split(',')[0].split(' ').slice(-1)[0] || 'NYC'}</div>
       </div>`;
+
+    // Show flow CTA
+    const cta = document.getElementById('ana-flow-cta');
+    if (cta) cta.style.display = 'flex';
   }
 }
 
@@ -1088,9 +1244,10 @@ function renderResume() {
       ${!state.resume ? `<div class="flag warning" style="margin-bottom:20px">⚠ No resume loaded. <strong onclick="showModule('setup')" style="cursor:pointer;text-decoration:underline">Add it in My Profile first →</strong></div>` : ''}
 
       <div class="card">
-        <div class="card-title">📋 Job Description</div>
+        <div class="card-title">📋 Job Description ${state.flow && state.flow.jd ? '<span style=\"color:var(--success);font-size:0.7rem\">✓ Carried from analysis</span>' : ''}</div>
+        ${state.flow && state.flow.jd ? '<div style=\"margin-bottom:8px;font-size:0.78rem;color:var(--text-muted)\">JD from Role Analyzer is pre-loaded — edit if needed.</div>' : ''}
         <div class="field">
-          <textarea id="res-jd" rows="8" placeholder="Paste the job description you're targeting..."></textarea>
+          <textarea id="res-jd" rows="8" placeholder="Paste the job description you're targeting...">${state.flow && state.flow.jd ? state.flow.jd : ''}</textarea>
         </div>
         <div class="field">
           <div class="field-label">Customization Focus <span style="color:var(--text-dim)">(optional)</span></div>
@@ -1118,6 +1275,12 @@ function renderResume() {
           <div class="card">
             <div class="output-area" id="res-rationale"></div>
           </div>
+        </div>
+        <div class="flow-cta-bar" id="res-flow-cta" style="display:none">
+          <span class="flow-cta-label">Resume tailored. Log it or continue to check your ATS score →</span>
+          <button class="btn-log" onclick="logApplicationQuick('resume_tailored')">📋 Log Application</button>
+          <button class="btn btn-secondary btn-sm" onclick="showFlowStep('rescore')" style="font-family:'Syne',sans-serif;font-weight:600">Check ATS Score →</button>
+          <button class="btn-flow" onclick="showFlowStep('cover')">Write Cover Letter →</button>
         </div>
       </div>
     </div>`;
@@ -1211,6 +1374,17 @@ Be specific. Reference actual text from both versions.`;
     await callClaude(system, rationalePrompt, ratOut);
   }
 
+  // Save to flow state
+  if (result) {
+    if (!state.flow) state.flow = {};
+    const jd = document.getElementById('res-jd').value.trim();
+    if (jd) state.flow.jd = jd;
+    state.flow.tailoredResume = result;
+    // Show flow CTA
+    const cta = document.getElementById('res-flow-cta');
+    if (cta) cta.style.display = 'flex';
+  }
+
   btn.disabled = false;
   btn.innerHTML = '<span>Re-tailor</span>';
 }
@@ -1227,8 +1401,9 @@ function renderCover() {
       </div>
 
       <div class="card">
-        <div class="card-title">📋 Job Description</div>
-        <textarea id="cov-jd" rows="7" placeholder="Paste the job description..."></textarea>
+        <div class="card-title">📋 Job Description ${state.flow && state.flow.jd ? '<span style=\"color:var(--success);font-size:0.7rem\">✓ Carried from analysis</span>' : ''}</div>
+        ${state.flow && state.flow.jd ? '<div style=\"margin-bottom:8px;font-size:0.78rem;color:var(--text-muted)\">JD from Role Analyzer is pre-loaded — edit if needed.</div>' : ''}
+        <textarea id="cov-jd" rows="7" placeholder="Paste the job description...">${state.flow && state.flow.jd ? state.flow.jd : ''}</textarea>
       </div>
 
       <div class="card">
@@ -1236,7 +1411,7 @@ function renderCover() {
         <div class="two-col">
           <div class="field">
             <div class="field-label">Company Name</div>
-            <input type="text" id="cov-company" placeholder="e.g. Acme Corp" />
+            <input type="text" id="cov-company" placeholder="e.g. Acme Corp" value="${state.flow && state.flow.company ? state.flow.company : ''}" />
           </div>
           <div class="field">
             <div class="field-label">What excites you about this company?</div>
@@ -1276,6 +1451,11 @@ function renderCover() {
           <div class="copy-row">
             <button class="btn btn-secondary btn-sm" data-copy="cov-output" onclick="copyText('cov-output')">Copy</button>
           </div>
+        </div>
+        <div class="flow-cta-bar" id="cov-flow-cta" style="display:none">
+          <span class="flow-cta-label">🎉 Cover letter done. Log this application to your tracker!</span>
+          <button class="btn-log" onclick="logApplicationQuick('full_flow')" style="font-size:0.9rem;padding:10px 20px">📋 Log Application</button>
+          <button class="btn btn-secondary btn-sm" onclick="showModule('tracker')" style="font-family:'Syne',sans-serif;font-weight:600">View Tracker →</button>
         </div>
       </div>
     </div>`;
@@ -1355,6 +1535,19 @@ Make it sound genuinely human. No buzzwords. No fluff. Be specific.`;
   const out = document.getElementById('cov-output');
   await callClaude(system, prompt, out);
 
+  // Save cover letter result to flow state
+  const coverResult = document.getElementById('cov-output')?.textContent;
+  if (coverResult) {
+    if (!state.flow) state.flow = {};
+    const jd = document.getElementById('cov-jd')?.value.trim();
+    if (jd) state.flow.jd = jd;
+    state.flow.coverLetter = coverResult;
+    state.flow.company = document.getElementById('cov-company')?.value.trim() || state.flow.company || '';
+    // Show log CTA
+    const cta = document.getElementById('cov-flow-cta');
+    if (cta) cta.style.display = 'flex';
+  }
+
   btn.disabled = false;
   btn.innerHTML = '<span>Regenerate</span>';
 }
@@ -1400,11 +1593,17 @@ renderWelcome();
 // ─── PATCH: showModule (adds outreach + tracker routing) ─────────────────────
 const _baseShowModule = window.showModule;
 window.showModule = function(name) {
+  // Always update nav active state first
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  state.currentModule = name;
+
   if (name === 'outreach') { renderColdOutreach(); return; }
   if (name === 'tracker')  { renderAppTracker();   return; }
-  if (name === 'analyzer') { 
+  if (name === 'analyzer') {
     if (state.flow && state.flow.active) renderFlowAnalyzer();
-    else renderAnalyzer(); 
+    else renderAnalyzer();
     return;
   }
   if (name === 'resume') {
@@ -1428,34 +1627,6 @@ state.flow.selectedPresets = [];
 window._outreachPresets = [];
 
 // ─── FLOW BAR ─────────────────────────────────────────────────────────────────
-window.renderFlowBar = function(currentStep) {
-  const steps = [
-    { id:'analyze', label:'Role Analysis', icon:'🔍' },
-    { id:'resume',  label:'Resume Tailor', icon:'📄' },
-    { id:'rescore', label:'ATS Re-Score',  icon:'📊' },
-    { id:'cover',   label:'Cover Letter',  icon:'✉️' },
-    { id:'log',     label:'Log App',       icon:'📋' }
-  ];
-  const idx = steps.findIndex(s => s.id === currentStep);
-  const prevStep = idx > 0 ? steps[idx-1] : null;
-  return `<div class="flow-bar">
-    <div class="flow-bar-inner">
-      ${steps.map((s,i) => `
-        <div class="flow-step ${i<idx?'done':i===idx?'active':'pending'}"
-             onclick="${i<idx?`showFlowStep('${s.id}')`:''}"
-             style="${i<idx?'cursor:pointer':''}">
-          <div class="flow-step-circle">${i<idx?'✓':s.icon}</div>
-          <div class="flow-step-label">${s.label}</div>
-        </div>
-        ${i<steps.length-1?`<div class="flow-connector ${i<idx?'done':''}"></div>`:''}`).join('')}
-    </div>
-    <div class="flow-actions">
-      ${prevStep?`<button class="btn btn-secondary btn-sm" onclick="showFlowStep('${prevStep.id}')">← Back</button>`:''}
-      <button class="btn btn-secondary btn-sm" onclick="startNewFlow()">↺ New Role</button>
-      ${currentStep!=='analyze'?`<button class="btn btn-secondary btn-sm" onclick="showModule('analyzer')">Exit Flow</button>`:''}
-    </div>
-  </div>`;
-};
 
 window.showFlowStep = function(step) {
   state.flow.step = step;
@@ -2547,6 +2718,23 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+
+<script>
+// ═══ DATA SEED — pre-loads saved state on first open from any origin ══════════
+(function() {
+  const LS_KEY = 'jobhunteros_v1';
+  if (!localStorage.getItem(LS_KEY)) {
+    try {
+      const b64 = "eyJwcm9maWxlIjp7Im5hbWUiOiJGZXJuYW5kYSBGbG9yZXMiLCJsb2NhdGlvbiI6Ik5ZQyIsImxldmVsIjoiU2VuaW9yIE1hbmFnZXIgLyBEaXJlY3RvciIsImluZHVzdHJpZXMiOiJUZWNoIC8gU2FhUywgQ29uc3VsdGluZyIsInNraWxscyI6IlByb2Nlc3MgZGVzaWduLCBSb2FkbWFwcGluZywgQ3Jvc3MtZnVuY3Rpb25hbCBzdGFrZWhvbGRlciBtYW5hZ2VtZW50LCBEYXRhIGFuYWx5c2lzLCBDb21wZXRpdGl2ZSByZXNlYXJjaCJ9";
+      const decoded = decodeURIComponent(escape(atob(b64)));
+      localStorage.setItem(LS_KEY, decoded);
+      console.log('[JobHunterOS] Session data seeded from embedded snapshot');
+    } catch(e) {
+      console.warn('[JobHunterOS] Seed failed:', e);
+    }
+  }
+})();
+</script>
 </body>
 </html>
 
