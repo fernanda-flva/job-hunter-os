@@ -1,0 +1,2552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Job Hunter OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0f1a20;
+    --surface: #162028;
+    --surface2: #1c2830;
+    --border: #2a3a42;
+    --accent: #ffc15e;
+    --accent2: #59a5d8;
+    --accent3: #e07a5f;
+    --text: #e0fbfc;
+    --text-muted: #85756e;
+    --text-dim: #3a4f58;
+    --success: #7ecba1;
+    --warning: #ffc15e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* Header */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 40px 0;
+    position: sticky;
+    top: 0;
+    background: rgba(15,26,32,0.97);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .header-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .header-row2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .key-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .get-key-link {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent2);
+    text-decoration: none;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+  }
+
+  .get-key-link:hover { color: var(--accent); }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-badge {
+    background: var(--accent);
+    color: #0f1a20;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .header-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .api-key-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    flex: 1;
+    transition: border-color 0.15s;
+  }
+
+  .api-key-wrap:focus-within {
+    border-color: var(--accent);
+  }
+
+  .api-key-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  .api-key-dot.active {
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+  }
+
+  #api-key-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    width: 100%;
+    letter-spacing: 0.03em;
+  }
+
+  #api-key-input::placeholder { color: var(--text-dim); }
+
+  /* Layout */
+  .app {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: calc(100vh - 97px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 32px 0;
+    position: sticky;
+    top: 97px;
+    height: calc(100vh - 97px);
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 0 20px;
+    margin-bottom: 32px;
+  }
+
+  .sidebar-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding: 0 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    margin-bottom: 2px;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active {
+    background: var(--surface2);
+    color: var(--accent);
+    border-color: var(--border);
+  }
+
+  .nav-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .nav-item.active .nav-icon { background: rgba(255,193,94,0.12); }
+
+  /* Resume store indicator */
+  .resume-status {
+    margin: 0 20px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .resume-status-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .resume-status-value {
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+
+  .dot.green { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .dot.red { background: var(--accent3); }
+
+  /* Main content */
+  .main {
+    padding: 40px;
+    max-width: 900px;
+  }
+
+  .module-header {
+    margin-bottom: 32px;
+  }
+
+  .module-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .module-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .module-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 560px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+  }
+
+  .card-title span { color: var(--text-muted); font-weight: 400; font-size: 0.8rem; font-family: 'DM Sans', sans-serif; }
+
+  /* Form elements */
+  textarea, input[type="text"], input[type="url"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    padding: 14px 16px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  textarea:focus, input[type="text"]:focus, input[type="url"]:focus {
+    border-color: var(--accent);
+  }
+
+  textarea::placeholder, input::placeholder { color: var(--text-dim); }
+
+  .field-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .field { margin-bottom: 16px; }
+
+  /* Button */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0f1a20;
+  }
+
+  .btn-primary:hover { background: #ffd08a; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover { background: var(--surface2); color: var(--text); }
+
+  .btn-sm { padding: 8px 16px; font-size: 0.75rem; }
+
+  /* Output area */
+  .output-area {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    font-size: 0.83rem;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 120px;
+    position: relative;
+  }
+
+  .output-area.loading { color: var(--text-muted); }
+  .output-area.error { border-color: var(--accent3); color: var(--accent3); }
+
+  /* Streaming cursor */
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .cursor { display: inline-block; width: 2px; height: 1em; background: var(--accent); margin-left: 2px; animation: blink 1s infinite; vertical-align: text-bottom; }
+
+  /* Score badges */
+  .score-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .score-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+
+  .score-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .score-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+  }
+
+  .score-value.high { color: var(--success); }
+  .score-value.med { color: var(--warning); }
+  .score-value.low { color: var(--accent3); }
+  .score-value.info { color: var(--accent2); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  .tab {
+    padding: 10px 18px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Flag/alert */
+  .flag {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin-top: 12px;
+  }
+
+  .flag.warning { background: rgba(255,193,94,0.08); border: 1px solid rgba(255,193,94,0.25); color: var(--warning); }
+  .flag.danger { background: rgba(224,122,95,0.08); border: 1px solid rgba(224,122,95,0.25); color: var(--accent3); }
+  .flag.success { background: rgba(126,203,161,0.08); border: 1px solid rgba(126,203,161,0.25); color: var(--success); }
+  .flag.info { background: rgba(89,165,216,0.08); border: 1px solid rgba(89,165,216,0.25); color: var(--accent2); }
+
+  /* Copy btn */
+  .copy-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  /* Loading spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(15,26,32,0.3);
+    border-top-color: #0f1a20;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  /* Welcome screen */
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    gap: 24px;
+  }
+
+  .welcome-ascii {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+    letter-spacing: 0.05em;
+  }
+
+  .welcome-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 3rem;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  .welcome-title em {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  .welcome-sub {
+    color: var(--text-muted);
+    max-width: 420px;
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 680px;
+    margin-top: 8px;
+  }
+
+  .module-card-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+
+  .module-card-btn:hover {
+    border-color: var(--accent);
+    background: var(--surface2);
+    transform: translateY(-2px);
+  }
+
+  .module-card-icon { font-size: 1.4rem; margin-bottom: 8px; }
+  .module-card-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    margin-bottom: 4px;
+  }
+  .module-card-desc { font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  /* Pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    font-weight: 400;
+    border: 1px solid;
+    margin: 2px;
+  }
+
+  .pill.green { color: var(--success); border-color: rgba(126,203,161,0.3); background: rgba(126,203,161,0.06); }
+  .pill.red { color: var(--accent3); border-color: rgba(224,122,95,0.3); background: rgba(224,122,95,0.06); }
+  .pill.blue { color: var(--accent2); border-color: rgba(89,165,216,0.3); background: rgba(89,165,216,0.06); }
+  .pill.yellow { color: var(--accent); border-color: rgba(255,193,94,0.3); background: rgba(255,193,94,0.06); }
+
+  /* Setup panel */
+  .setup-banner {
+    background: linear-gradient(135deg, rgba(255,193,94,0.05) 0%, rgba(89,165,216,0.05) 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .setup-banner h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 6px;
+  }
+
+  .setup-banner p { color: var(--text-muted); font-size: 0.83rem; line-height: 1.5; margin-bottom: 16px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+
+  /* Diff view */
+  .diff-added { background: rgba(71,255,176,0.08); border-left: 2px solid var(--success); padding-left: 8px; color: var(--success); }
+  .diff-removed { background: rgba(255,107,107,0.06); border-left: 2px solid var(--accent3); padding-left: 8px; color: var(--accent3); text-decoration: line-through; opacity: 0.6; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  @media (max-width: 768px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .main { padding: 20px; }
+    .two-col { grid-template-columns: 1fr; }
+    .module-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-row1">
+    <div class="logo">
+      Job Hunter <span style="color:var(--accent)">OS</span>
+      <div class="logo-badge">Beta</div>
+    </div>
+    <div class="header-meta">AI-POWERED · BUILT WITH CLAUDE · NYC</div>
+  </div>
+  <div class="header-row2">
+    <span class="key-label">🔑 API KEY</span>
+    <div class="api-key-wrap">
+      <div class="api-key-dot" id="api-key-dot"></div>
+      <input
+        type="password"
+        id="api-key-input"
+        placeholder="Paste your Anthropic API key (sk-ant-...) and press Enter"
+        autocomplete="off"
+        spellcheck="false"
+        onkeydown="if(event.key==='Enter') saveApiKey()"
+        oninput="if(this.value.startsWith('sk-ant-')||this.value.startsWith('sk-')) saveApiKey()"
+        onclick="if(this.hasAttribute('readonly')) { if(confirm('Clear API key and re-enter?')) clearApiKey(); }"
+      />
+      <span id="api-key-status" style="font-family:'DM Mono',monospace;font-size:0.65rem;white-space:nowrap"></span>
+    </div>
+    <a href="https://console.anthropic.com" target="_blank" class="get-key-link">Get key →</a>
+  </div>
+</header>
+
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Modules</div>
+      <div class="nav-item active" onclick="showModule('welcome')" id="nav-welcome">
+        <div class="nav-icon">🏠</div> Home
+      </div>
+      <div class="nav-item" onclick="showModule('setup')" id="nav-setup">
+        <div class="nav-icon">⚙️</div> My Profile
+      </div>
+      <div class="nav-item" onclick="showModule('analyzer')" id="nav-analyzer">
+        <div class="nav-icon">🔍</div> Role Analyzer
+      </div>
+      <div class="nav-item" onclick="showModule('resume')" id="nav-resume">
+        <div class="nav-icon">📄</div> Resume Tailor
+      </div>
+      <div class="nav-item" onclick="showModule('cover')" id="nav-cover">
+        <div class="nav-icon">✉️</div> Cover Letter
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Outreach & Tracking</div>
+      <div class="nav-item" id="nav-outreach" onclick="renderColdOutreach()">
+        <div class="nav-icon">📨</div> Cold Outreach
+      </div>
+      <div class="nav-item" id="nav-tracker" onclick="renderAppTracker()">
+        <div class="nav-icon">📋</div> App Tracker
+      </div>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin:0 20px 20px"></div>
+
+    <div class="resume-status" id="resume-status-indicator">
+      <div class="resume-status-label">Resume</div>
+      <div class="resume-status-value">
+        <span class="dot red"></span><span id="resume-status-text">Not loaded</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main" id="main-content">
+    <!-- Content injected by JS -->
+  </main>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const state = {
+  resume: '',
+  coverLetter: '',
+  apiKey: '',
+  profile: { name: '', location: 'NYC', level: 'Senior Manager / Director', industries: 'Tech / SaaS, Consulting', skills: 'Process design, Roadmapping, Cross-functional stakeholder management, Data analysis, Competitive research' },
+  currentModule: 'welcome'
+};
+
+// ─── Claude API ───────────────────────────────────────────────────────────────
+async function callClaude(systemPrompt, userPrompt, outputEl, streaming = true) {
+  if (!state.apiKey) {
+    outputEl.classList.remove('loading');
+    outputEl.classList.add('error');
+    outputEl.textContent = '⚠ No API key set. Paste your Anthropic API key in the header bar above and press Enter.';
+    return null;
+  }
+
+  outputEl.classList.remove('error');
+  outputEl.innerHTML = '<span class="cursor"></span>';
+  outputEl.classList.add('loading');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': state.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    const data = await res.json();
+    outputEl.classList.remove('loading');
+
+    if (data.error) {
+      outputEl.classList.add('error');
+      outputEl.textContent = '⚠ API Error: ' + data.error.message;
+      return null;
+    }
+
+    const text = data.content?.map(b => b.text || '').join('') || '';
+    outputEl.textContent = text;
+    return text;
+  } catch (err) {
+    outputEl.classList.remove('loading');
+    outputEl.classList.add('error');
+    outputEl.textContent = '⚠ Request failed: ' + err.message;
+    return null;
+  }
+}
+
+// ─── API Key ──────────────────────────────────────────────────────────────────
+function saveApiKey() {
+  const input = document.getElementById('api-key-input');
+  const dot = document.getElementById('api-key-dot');
+  const status = document.getElementById('api-key-status');
+  const val = input.value.trim();
+
+  if (val.startsWith('sk-ant-') || val.startsWith('sk-')) {
+    state.apiKey = val;
+    dot.classList.add('active');
+    status.textContent = 'KEY SET ✓';
+    status.style.color = 'var(--success)';
+    input.blur();
+    // Mask after saving
+    setTimeout(() => {
+      input.value = val.slice(0, 14) + '••••••••••••••••';
+      input.setAttribute('readonly', true);
+      input.style.cursor = 'default';
+    }, 400);
+  } else if (val.length > 0) {
+    status.textContent = 'INVALID KEY';
+    status.style.color = 'var(--accent3)';
+  }
+}
+
+function clearApiKey() {
+  state.apiKey = '';
+  const input = document.getElementById('api-key-input');
+  const dot = document.getElementById('api-key-dot');
+  const status = document.getElementById('api-key-status');
+  input.value = '';
+  input.removeAttribute('readonly');
+  input.style.cursor = '';
+  dot.classList.remove('active');
+  status.textContent = '';
+  input.focus();
+}
+
+
+function copyText(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const btn = document.querySelector(`[data-copy="${id}"]`);
+    if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 1500); }
+  });
+}
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+function showModule(name) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const nav = document.getElementById('nav-' + name);
+  if (nav) nav.classList.add('active');
+  state.currentModule = name;
+  const renders = { welcome: renderWelcome, setup: renderSetup, analyzer: renderAnalyzer, resume: renderResume, cover: renderCover };
+  if (renders[name]) { document.getElementById('main-content').innerHTML = ''; renders[name](); }
+}
+
+// ─── Update resume status ─────────────────────────────────────────────────────
+function updateResumeStatus() {
+  const dot = document.querySelector('#resume-status-indicator .dot');
+  const txt = document.getElementById('resume-status-text');
+  if (state.resume && state.resume.length > 50) {
+    dot.className = 'dot green';
+    txt.textContent = 'Loaded ✓';
+  } else {
+    dot.className = 'dot red';
+    txt.textContent = 'Not loaded';
+  }
+}
+
+// ─── WELCOME ──────────────────────────────────────────────────────────────────
+function renderWelcome() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = `
+    <div class="welcome fade-in">
+      <pre class="welcome-ascii">╔═══════════════════════════╗
+║  SEARCHING FOR SIGNAL...  ║
+╚═══════════════════════════╝</pre>
+      <div>
+        <div class="welcome-title">Job Hunter <em>OS</em></div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--text-dim);letter-spacing:0.1em;margin-top:6px">YOUR AI-POWERED SEARCH COMMAND CENTER</div>
+      </div>
+      <p class="welcome-sub">Paste a role. Get instant analysis, a tailored resume, and a human-sounding cover letter — in minutes, not hours.</p>
+      <div class="module-grid">
+        <div class="module-card-btn" onclick="showModule('analyzer')">
+          <div class="module-card-icon">🔍</div>
+          <div class="module-card-name">Role Analyzer</div>
+          <div class="module-card-desc">Salary, H1B, remote, fit score, red flags</div>
+        </div>
+        <div class="module-card-btn" onclick="showModule('resume')">
+          <div class="module-card-icon">📄</div>
+          <div class="module-card-name">Resume Tailor</div>
+          <div class="module-card-desc">Rewrite bullets to match JD language</div>
+        </div>
+        <div class="module-card-btn" onclick="showModule('cover')">
+          <div class="module-card-icon">✉️</div>
+          <div class="module-card-name">Cover Letter</div>
+          <div class="module-card-desc">Human-feeling, tailored, AI-policy aware</div>
+        </div>
+      </div>
+      <div style="color:var(--text-dim);font-size:0.75rem;font-family:'DM Mono',monospace;">
+        START WITH → <span style="color:var(--accent);cursor:pointer" onclick="showModule('setup')">MY PROFILE</span> TO SET YOUR RESUME + PREFERENCES
+      </div>
+    </div>`;
+}
+
+// ─── SETUP ────────────────────────────────────────────────────────────────────
+function renderSetup() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = `
+    <div class="fade-in">
+      <div class="module-header">
+        <div class="module-tag">// STEP 01</div>
+        <div class="module-title">My Profile</div>
+        <p class="module-desc">Paste your resume and base cover letter once. Every module will use these as context — no re-pasting needed.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👤 Basic Info</div>
+        <div class="two-col">
+          <div class="field">
+            <div class="field-label">Your Name</div>
+            <input type="text" id="setup-name" placeholder="Full name" value="${state.profile.name}" />
+          </div>
+          <div class="field">
+            <div class="field-label">City / Market</div>
+            <input type="text" id="setup-location" placeholder="e.g. New York City" value="${state.profile.location}" />
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Target Role Level</div>
+          <input type="text" id="setup-level" placeholder="e.g. Senior Manager / Director" value="${state.profile.level}" />
+        </div>
+        <div class="field">
+          <div class="field-label">Industries / Background</div>
+          <input type="text" id="setup-industries" placeholder="e.g. Tech / SaaS, Consulting" value="${state.profile.industries}" />
+        </div>
+        <div class="field">
+          <div class="field-label">Core Skills (comma-separated)</div>
+          <input type="text" id="setup-skills" placeholder="e.g. Process design, Roadmapping, Stakeholder management" value="${state.profile.skills}" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📄 Your Resume <span>Paste plain text version</span></div>
+        <div class="field">
+          <textarea id="setup-resume" rows="12" placeholder="Paste your full resume here as plain text...">${state.resume}</textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">✉️ Base Cover Letter <span>Optional — used as your starting tone/voice</span></div>
+        <div class="field">
+          <textarea id="setup-cover" rows="8" placeholder="Paste a cover letter you've used before, or a few sentences about your voice and style...">${state.coverLetter}</textarea>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveSetup()">
+        <span>Save Profile</span>
+      </button>
+    </div>`;
+}
+
+function saveSetup() {
+  state.profile.name = document.getElementById('setup-name').value;
+  state.profile.location = document.getElementById('setup-location').value;
+  state.profile.level = document.getElementById('setup-level').value;
+  state.profile.industries = document.getElementById('setup-industries').value;
+  state.profile.skills = document.getElementById('setup-skills').value;
+  state.resume = document.getElementById('setup-resume').value;
+  state.coverLetter = document.getElementById('setup-cover').value;
+  updateResumeStatus();
+
+  const btn = document.querySelector('.btn-primary');
+  btn.textContent = '✓ Saved!';
+  btn.style.background = 'var(--success)';
+  setTimeout(() => { btn.innerHTML = '<span>Save Profile</span>'; btn.style.background = ''; }, 2000);
+}
+
+// ─── ANALYZER ────────────────────────────────────────────────────────────────
+function renderAnalyzer() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = `
+    <div class="fade-in">
+      <div class="module-header">
+        <div class="module-tag">// MODULE 01</div>
+        <div class="module-title">Role Analyzer</div>
+        <p class="module-desc">Paste a job description. Get instant intel on salary, H1B, remote policy, fit score, red flags, and what to ask for.</p>
+      </div>
+
+      ${!state.resume ? `<div class="flag info">💡 Tip: Add your resume in <strong>My Profile</strong> for a personalized fit score.</div>` : ''}
+
+      <div class="card">
+        <div class="card-title">📋 Job Description</div>
+        <div class="field">
+          <textarea id="ana-jd" rows="10" placeholder="Paste the full job description here..."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="runAnalyzer()" id="ana-btn">
+          <span>Analyze Role</span>
+        </button>
+      </div>
+
+      <div id="ana-scores" style="display:none" class="fade-in">
+        <div class="score-grid" id="score-grid"></div>
+      </div>
+
+      <div id="ana-output-wrap" style="display:none;margin-top:20px" class="fade-in">
+        <div class="card">
+          <div class="card-title">📊 Full Analysis</div>
+          <div class="output-area" id="ana-output"></div>
+          <div class="copy-row">
+            <button class="btn btn-secondary btn-sm" data-copy="ana-output" onclick="copyText('ana-output')">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function runAnalyzer() {
+  const jd = document.getElementById('ana-jd').value.trim();
+  if (!jd) { alert('Please paste a job description first.'); return; }
+
+  const btn = document.getElementById('ana-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Analyzing...';
+
+  document.getElementById('ana-output-wrap').style.display = 'block';
+  document.getElementById('ana-scores').style.display = 'block';
+  document.getElementById('score-grid').innerHTML = '';
+
+  const system = `You are a senior career strategist and compensation expert specializing in Product Management, Product Operations, Operations, and Strategy roles. You help senior-level professionals (Senior Manager / Director level) make smart decisions about job opportunities.
+
+The candidate profile:
+- Name: ${state.profile.name || 'the candidate'}
+- Location: ${state.profile.location}
+- Target level: ${state.profile.level}
+- Background: ${state.profile.industries}
+- Skills: ${state.profile.skills}
+- Needs H1B visa sponsorship: YES
+
+${state.resume ? `Resume context:\n${state.resume.slice(0, 1500)}` : ''}
+
+Always be direct, specific, and opinionated. Flag risks clearly.`;
+
+  const prompt = `Analyze this job description thoroughly. Provide:
+
+1. **ROLE SNAPSHOT** — Company, title, level, location, work model (remote/hybrid/onsite)
+
+2. **COMPENSATION INTEL** — If salary listed, assess if fair for ${state.profile.location} at this level. If NOT listed, provide realistic salary range benchmarks for this role/level/${state.profile.location} and what the candidate should ask for. Include equity/bonus notes if mentioned.
+
+3. **H1B SPONSORSHIP** — Scan the JD carefully. Flag any language suggesting sponsorship is available (e.g., "will sponsor", "authorized to work") or NOT available (e.g., "must be authorized", "no sponsorship"). Rate likelihood: HIGH / MEDIUM / LOW / NOT MENTIONED. Recommend whether to apply or confirm before applying.
+
+4. **FIT SCORE** — Rate 1-10 how well this role matches the candidate's profile. Explain top 3 alignment points and any gaps.
+
+5. **GREEN FLAGS** — Positive signals about the company/role (growth, team, mission, perks)
+
+6. **RED FLAGS** — Watch-outs: vague scope, unclear seniority, signs of dysfunction, unrealistic expectations, low comp signals
+
+7. **RECOMMENDED QUESTIONS TO ASK** — 3 sharp questions this candidate should ask in interviews based on what's unclear or concerning in the JD
+
+8. **APPLY RECOMMENDATION** — Strong Yes / Yes with caveats / Skip — with a 2-sentence rationale
+
+Job Description:
+${jd}`;
+
+  const out = document.getElementById('ana-output');
+  const result = await callClaude(system, prompt, out);
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>Re-analyze</span>';
+
+  if (result) {
+    // Parse out a fit score if mentioned
+    const fitMatch = result.match(/fit score[:\s]*(\d+)/i);
+    const h1bMatch = result.match(/h1b[^:]*:\s*(HIGH|MEDIUM|LOW|NOT MENTIONED)/i);
+
+    document.getElementById('score-grid').innerHTML = `
+      <div class="score-card">
+        <div class="score-label">Fit Score</div>
+        <div class="score-value ${fitMatch ? (parseInt(fitMatch[1]) >= 7 ? 'high' : parseInt(fitMatch[1]) >= 5 ? 'med' : 'low') : 'info'}">${fitMatch ? fitMatch[1] + '/10' : '—'}</div>
+      </div>
+      <div class="score-card">
+        <div class="score-label">H1B Likelihood</div>
+        <div class="score-value ${h1bMatch ? (h1bMatch[1] === 'HIGH' ? 'high' : h1bMatch[1] === 'MEDIUM' ? 'med' : 'low') : 'info'}">${h1bMatch ? h1bMatch[1] : 'CHECK'}</div>
+      </div>
+      <div class="score-card">
+        <div class="score-label">Market</div>
+        <div class="score-value info">${state.profile.location.split(',')[0].split(' ').slice(-1)[0]}</div>
+      </div>
+      <div class="score-card">
+        <div class="score-label">Your Level</div>
+        <div class="score-value info">Dir+</div>
+      </div>`;
+  }
+}
+
+// ─── RESUME TAILOR ────────────────────────────────────────────────────────────
+function renderResume() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = `
+    <div class="fade-in">
+      <div class="module-header">
+        <div class="module-tag">// MODULE 02</div>
+        <div class="module-title">Resume Tailor</div>
+        <p class="module-desc">Paste a job description. Claude rewrites your resume bullets to mirror the role's language and priorities — without making it sound AI-generated.</p>
+      </div>
+
+      ${!state.resume ? `<div class="flag warning" style="margin-bottom:20px">⚠ No resume loaded. <strong onclick="showModule('setup')" style="cursor:pointer;text-decoration:underline">Add it in My Profile first →</strong></div>` : ''}
+
+      <div class="card">
+        <div class="card-title">📋 Job Description</div>
+        <div class="field">
+          <textarea id="res-jd" rows="8" placeholder="Paste the job description you're targeting..."></textarea>
+        </div>
+        <div class="field">
+          <div class="field-label">Customization Focus <span style="color:var(--text-dim)">(optional)</span></div>
+          <input type="text" id="res-focus" placeholder="e.g. Emphasize data work, downplay consulting, highlight AI experience" />
+        </div>
+        <button class="btn btn-primary" onclick="runResume()" id="res-btn">
+          <span>Tailor My Resume</span>
+        </button>
+      </div>
+
+      <div id="res-output-wrap" style="display:none;margin-top:20px" class="fade-in">
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('tailored')" id="tab-tailored">Tailored Resume</div>
+          <div class="tab" onclick="switchTab('rationale')" id="tab-rationale">What Changed & Why</div>
+        </div>
+        <div id="resume-tailored-wrap">
+          <div class="card">
+            <div class="output-area" id="res-output"></div>
+            <div class="copy-row">
+              <button class="btn btn-secondary btn-sm" data-copy="res-output" onclick="copyText('res-output')">Copy</button>
+            </div>
+          </div>
+        </div>
+        <div id="resume-rationale-wrap" style="display:none">
+          <div class="card">
+            <div class="output-area" id="res-rationale"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function switchTab(name) {
+  document.getElementById('tab-tailored').classList.toggle('active', name === 'tailored');
+  document.getElementById('tab-rationale').classList.toggle('active', name === 'rationale');
+  document.getElementById('resume-tailored-wrap').style.display = name === 'tailored' ? 'block' : 'none';
+  document.getElementById('resume-rationale-wrap').style.display = name === 'rationale' ? 'block' : 'none';
+}
+
+async function runResume() {
+  const jd = document.getElementById('res-jd').value.trim();
+  const focus = document.getElementById('res-focus').value.trim();
+
+  if (!jd) { alert('Please paste a job description.'); return; }
+  if (!state.resume) { alert('Please add your resume in My Profile first.'); return; }
+
+  const btn = document.getElementById('res-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Tailoring...';
+  document.getElementById('res-output-wrap').style.display = 'block';
+
+  const system = `You are an expert resume writer for senior Product Management, Product Operations, Operations, and Strategy professionals. You write in a sharp, direct, human voice — never corporate fluff, never buzzword soup. You mirror the language of job descriptions authentically.
+
+Candidate profile:
+- Level: ${state.profile.level}
+- Background: ${state.profile.industries}  
+- Location: ${state.profile.location}
+- Core skills: ${state.profile.skills}`;
+
+  const prompt = `Here is the candidate's current resume:
+<resume>
+${state.resume}
+</resume>
+
+Here is the target job description:
+<jd>
+${jd}
+</jd>
+
+${focus ? `Customization notes: ${focus}` : ''}
+
+Task: Rewrite the resume to be optimally tailored for this role. 
+
+Rules:
+- Rewrite bullet points to mirror the JD's language, keywords, and priorities — but keep it natural and human
+- Preserve the original structure and truthful content — don't invent experience
+- Adjust the summary/objective if present to speak directly to this role
+- Highlight the most relevant experiences more prominently
+- If the JD values data-driven decision making, make sure metrics and outcomes are front and center
+- Don't make it sound AI-generated — vary sentence structure, avoid clichés like "spearheaded" or "leveraged"
+- Keep it to 1 page worth of content (2 max for 10+ years experience)
+
+Output the full tailored resume, ready to paste.`;
+
+  const out = document.getElementById('res-output');
+  const result = await callClaude(system, prompt, out);
+
+  // Also generate rationale — pass both original and tailored resume explicitly
+  if (result) {
+    const ratOut = document.getElementById('res-rationale');
+    ratOut.innerHTML = '<span class="cursor"></span>';
+    const rationalePrompt = `You are comparing two versions of a resume to explain what changed and why.
+
+ORIGINAL RESUME (before tailoring):
+<original>
+${state.resume}
+</original>
+
+TAILORED RESUME (after tailoring for this role):
+<tailored>
+${result}
+</tailored>
+
+TARGET JOB DESCRIPTION:
+<jd>
+${jd}
+</jd>
+
+Explain clearly:
+1. TOP 5 CHANGES — for each, quote the original line, show what it became, and explain what in the JD drove that change
+2. KEYWORDS WOVEN IN — list JD terms that were incorporated and where
+3. WHAT WAS DE-EMPHASIZED — things removed or minimized and why they weren't relevant
+4. GAPS THAT COULDN'T BE BRIDGED — things the JD wants that aren't in the background, and how to address in interviews
+5. ONE THING TO BE READY TO EXPLAIN — a claim in the tailored version that might get probed
+
+Be specific. Reference actual text from both versions.`;
+
+    await callClaude(system, rationalePrompt, ratOut);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>Re-tailor</span>';
+}
+
+// ─── COVER LETTER ────────────────────────────────────────────────────────────
+function renderCover() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = `
+    <div class="fade-in">
+      <div class="module-header">
+        <div class="module-tag">// MODULE 03</div>
+        <div class="module-title">Cover Letter</div>
+        <p class="module-desc">Get a tailored, human-feeling cover letter — plus an AI policy check to flag if you should rewrite it manually before sending.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Job Description</div>
+        <textarea id="cov-jd" rows="7" placeholder="Paste the job description..."></textarea>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏢 Company Context <span>Optional but makes it much better</span></div>
+        <div class="two-col">
+          <div class="field">
+            <div class="field-label">Company Name</div>
+            <input type="text" id="cov-company" placeholder="e.g. Acme Corp" />
+          </div>
+          <div class="field">
+            <div class="field-label">What excites you about this company?</div>
+            <input type="text" id="cov-why" placeholder="e.g. Their approach to AI-first ops, recent Series B..." />
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Specific Experience to Highlight</div>
+          <input type="text" id="cov-highlight" placeholder="e.g. My time building the ops framework at [prev company], the 40% efficiency gain project..." />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚙️ Options</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">
+            <input type="checkbox" id="cov-aipolicy" checked style="accent-color:var(--accent)" />
+            Run AI policy check
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem">
+            <input type="checkbox" id="cov-short" style="accent-color:var(--accent)" />
+            Short version (3 paragraphs max)
+          </label>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="runCover()" id="cov-btn">
+        <span>Generate Cover Letter</span>
+      </button>
+
+      <div id="cov-policy-wrap" style="display:none;margin-top:20px" class="fade-in"></div>
+
+      <div id="cov-output-wrap" style="display:none;margin-top:20px" class="fade-in">
+        <div class="card">
+          <div class="card-title">✉️ Your Cover Letter</div>
+          <div class="output-area" id="cov-output"></div>
+          <div class="copy-row">
+            <button class="btn btn-secondary btn-sm" data-copy="cov-output" onclick="copyText('cov-output')">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function runCover() {
+  const jd = document.getElementById('cov-jd').value.trim();
+  const company = document.getElementById('cov-company').value.trim();
+  const why = document.getElementById('cov-why').value.trim();
+  const highlight = document.getElementById('cov-highlight').value.trim();
+  const checkPolicy = document.getElementById('cov-aipolicy').checked;
+  const shortVersion = document.getElementById('cov-short').checked;
+
+  if (!jd) { alert('Please paste a job description.'); return; }
+
+  const btn = document.getElementById('cov-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Generating...';
+
+  // AI Policy Check
+  if (checkPolicy) {
+    document.getElementById('cov-policy-wrap').style.display = 'block';
+    const policyEl = document.createElement('div');
+    policyEl.className = 'card';
+    policyEl.innerHTML = '<div class="card-title">🤖 AI Policy Check</div><div class="output-area" id="policy-output"></div>';
+    document.getElementById('cov-policy-wrap').innerHTML = '';
+    document.getElementById('cov-policy-wrap').appendChild(policyEl);
+
+    const policyOut = document.getElementById('policy-output');
+    await callClaude(
+      'You are an expert at identifying when companies screen for AI-generated job applications.',
+      `Review this job description for any signals that the company: (1) explicitly prohibits AI-generated cover letters, (2) uses AI detection tools, (3) asks applicants to include a specific word/phrase to prove they read the JD, (4) asks application questions that require genuine human answers, (5) has signals suggesting a human-reviewed process where AI content would stand out negatively.
+
+Then give:
+- POLICY RISK: HIGH / MEDIUM / LOW
+- What specifically signals this (or why there are no signals)
+- Recommendation: Safe to use AI-generated content as-is / Personalize heavily before sending / Rewrite manually
+
+JD: ${jd}`,
+      policyOut
+    );
+  }
+
+  // Generate cover letter
+  document.getElementById('cov-output-wrap').style.display = 'block';
+
+  const system = `You are an expert career coach and writer who specializes in cover letters for Product Management, Product Operations, Operations, and Strategy roles at growth-stage and mid-market companies. 
+
+You write cover letters that:
+- Sound like a real, smart human wrote them — NOT AI
+- Are direct and confident, not sycophantic  
+- Lead with a hook, not "I am writing to apply for..."
+- Show specific knowledge of the company when provided
+- Connect the candidate's actual experience to the role's actual needs
+- End with confidence and a clear next step
+- Use varied sentence structure, natural rhythm, occasional short punchy sentences
+
+Candidate:
+- Name: ${state.profile.name || 'the candidate'}
+- Level: ${state.profile.level}
+- Location: ${state.profile.location}
+- Background: ${state.profile.industries}
+- Skills: ${state.profile.skills}
+${state.coverLetter ? `\nVoice/tone reference from their existing writing:\n${state.coverLetter.slice(0, 600)}` : ''}`;
+
+  const prompt = `Write a cover letter for this role.
+
+Job Description: ${jd}
+${company ? `Company: ${company}` : ''}
+${why ? `Why they're excited about this company: ${why}` : ''}
+${highlight ? `Key experience to highlight: ${highlight}` : ''}
+${state.resume ? `Relevant resume context: ${state.resume.slice(0, 1000)}` : ''}
+${shortVersion ? 'Keep it to 3 tight paragraphs.' : 'Aim for 4 paragraphs — hook, experience fit, why this company/role, close.'}
+
+Make it sound genuinely human. No buzzwords. No fluff. Be specific.`;
+
+  const out = document.getElementById('cov-output');
+  await callClaude(system, prompt, out);
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>Regenerate</span>';
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderWelcome();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SESSION PATCHES: Flow system, ATS Rescore, Cover Letter Feedback,
+     Cold Outreach, App Tracker, Contact Logging
+     ═══════════════════════════════════════════════════════════════ -->
+<style>
+  input[type="email"], input[type="url"], input[type="date"] {
+    width:100%;background:var(--surface2);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);padding:14px 16px;
+    font-family:'DM Mono',monospace;font-size:0.8rem;outline:none;
+    transition:border-color 0.15s;box-sizing:border-box;
+    -webkit-appearance:none;appearance:none;
+  }
+  input[type="email"]:focus, input[type="url"]:focus, input[type="date"]:focus { border-color:var(--accent); }
+  input[type="email"]::placeholder, input[type="url"]::placeholder { color:var(--text-dim); }
+  .tone-preset-btn {
+    background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+    color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:0.75rem;
+    font-weight:500;padding:5px 13px;cursor:pointer;transition:all 0.15s;white-space:nowrap;
+  }
+  .tone-preset-btn:hover { border-color:var(--accent2);color:var(--accent2);background:rgba(89,165,216,0.08); }
+  .tone-preset-btn.selected { border-color:var(--accent2);color:var(--accent2);background:rgba(89,165,216,0.12);font-weight:600; }
+  .cov-version-chip {
+    display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
+    font-family:'DM Mono',monospace;font-size:0.62rem;border:1px solid var(--border);
+    color:var(--text-muted);background:var(--surface2);cursor:pointer;transition:all 0.15s;
+  }
+  .cov-version-chip:hover { border-color:var(--accent);color:var(--accent); }
+  .cov-version-chip.current { border-color:var(--accent);color:var(--accent);background:rgba(255,193,94,0.1); }
+  .pill { display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-family:'DM Mono',monospace;font-size:0.6rem;font-weight:600;letter-spacing:0.04em; }
+  .pill.blue   { background:rgba(89,165,216,0.12);color:#59a5d8;border:1px solid rgba(89,165,216,0.25); }
+  .pill.yellow { background:rgba(255,193,94,0.12);color:#ffc15e;border:1px solid rgba(255,193,94,0.25); }
+  .pill.green  { background:rgba(126,203,161,0.12);color:#7ecba1;border:1px solid rgba(126,203,161,0.25); }
+</style>
+<script>
+// ─── PATCH: showModule (adds outreach + tracker routing) ─────────────────────
+const _baseShowModule = window.showModule;
+window.showModule = function(name) {
+  if (name === 'outreach') { renderColdOutreach(); return; }
+  if (name === 'tracker')  { renderAppTracker();   return; }
+  if (name === 'analyzer') { 
+    if (state.flow && state.flow.active) renderFlowAnalyzer();
+    else renderAnalyzer(); 
+    return;
+  }
+  if (name === 'resume') {
+    if (state.flow && state.flow.active && state.flow.jd) renderFlowResume();
+    else renderResume();
+    return;
+  }
+  if (name === 'cover') {
+    if (state.flow && state.flow.active && state.flow.jd) renderFlowCover();
+    else renderCover();
+    return;
+  }
+  _baseShowModule(name);
+};
+
+// ─── FLOW STATE ───────────────────────────────────────────────────────────────
+if (!state.flow) state.flow = { active: false, jd: '', company: '', roleTitle: '', analysisResult: '', tailoredResume: '', coverLetter: '', rescoreResult: '', rescoreResume: '', step: '' };
+if (!state.applications) state.applications = [];
+state.flow.coverVersions = state.flow.coverVersions || [];
+state.flow.selectedPresets = [];
+window._outreachPresets = [];
+
+// ─── FLOW BAR ─────────────────────────────────────────────────────────────────
+window.renderFlowBar = function(currentStep) {
+  const steps = [
+    { id:'analyze', label:'Role Analysis', icon:'🔍' },
+    { id:'resume',  label:'Resume Tailor', icon:'📄' },
+    { id:'rescore', label:'ATS Re-Score',  icon:'📊' },
+    { id:'cover',   label:'Cover Letter',  icon:'✉️' },
+    { id:'log',     label:'Log App',       icon:'📋' }
+  ];
+  const idx = steps.findIndex(s => s.id === currentStep);
+  const prevStep = idx > 0 ? steps[idx-1] : null;
+  return `<div class="flow-bar">
+    <div class="flow-bar-inner">
+      ${steps.map((s,i) => `
+        <div class="flow-step ${i<idx?'done':i===idx?'active':'pending'}"
+             onclick="${i<idx?`showFlowStep('${s.id}')`:''}"
+             style="${i<idx?'cursor:pointer':''}">
+          <div class="flow-step-circle">${i<idx?'✓':s.icon}</div>
+          <div class="flow-step-label">${s.label}</div>
+        </div>
+        ${i<steps.length-1?`<div class="flow-connector ${i<idx?'done':''}"></div>`:''}`).join('')}
+    </div>
+    <div class="flow-actions">
+      ${prevStep?`<button class="btn btn-secondary btn-sm" onclick="showFlowStep('${prevStep.id}')">← Back</button>`:''}
+      <button class="btn btn-secondary btn-sm" onclick="startNewFlow()">↺ New Role</button>
+      ${currentStep!=='analyze'?`<button class="btn btn-secondary btn-sm" onclick="showModule('analyzer')">Exit Flow</button>`:''}
+    </div>
+  </div>`;
+};
+
+window.showFlowStep = function(step) {
+  state.flow.step = step;
+  if (step==='analyze') renderFlowAnalyzer && renderFlowAnalyzer();
+  else if (step==='resume')  renderFlowResume  && renderFlowResume();
+  else if (step==='rescore') renderFlowRescore && renderFlowRescore();
+  else if (step==='cover')   renderFlowCover   && renderFlowCover();
+  else if (step==='log')     renderAppTracker  && renderAppTracker();
+};
+
+window.startNewFlow = function() {
+  state.flow = { active:false, jd:'', company:'', roleTitle:'', analysisResult:'', tailoredResume:'', coverLetter:'', rescoreResult:'', rescoreResume:'', step:'', coverVersions:[], selectedPresets:[] };
+  renderAnalyzer();
+};
+
+// ─── PATCH: logApplicationQuick ──────────────────────────────────────────────
+window.logApplicationQuick = function(stage) {
+  if (!state.applications) state.applications = [];
+  const existing = state.applications.find(a => a.company === state.flow.company && a.role === state.flow.roleTitle);
+  if (existing) {
+    if (state.flow.rescoreResult) existing.rescoreResult = state.flow.rescoreResult;
+    if (state.flow.rescoreResume) existing.rescoreResume = state.flow.rescoreResume;
+    if (state.flow.analysisResult) existing.analysisResult = state.flow.analysisResult;
+    if (state.flow.tailoredResume) existing.tailoredResume = state.flow.tailoredResume;
+    if (state.flow.coverLetter) existing.coverLetter = state.flow.coverLetter;
+    existing.stage = stage;
+    showToast('✓ Updated — ' + existing.company + ' · ' + existing.role);
+    return;
+  }
+  const app = {
+    id: Date.now(), company: state.flow.company||'', role: state.flow.roleTitle||'',
+    jd: state.flow.jd||'', analysisResult: state.flow.analysisResult||'',
+    tailoredResume: state.flow.tailoredResume||'', coverLetter: state.flow.coverLetter||'',
+    rescoreResult: state.flow.rescoreResult||'', rescoreResume: state.flow.rescoreResume||'',
+    stage, status:'To Apply', contacts:[],
+    dateAdded: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+    notes:''
+  };
+  state.applications.unshift(app);
+  showToast('✓ Logged — ' + app.company + ' · ' + app.role);
+};
+
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:28px;right:28px;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:12px 20px;font-family:"DM Mono",monospace;font-size:0.75rem;color:var(--accent);z-index:9999;transition:opacity 0.3s'; document.body.appendChild(t); }
+  t.textContent = msg; t.style.opacity='1';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.style.opacity='0', 2500);
+}
+</script>
+
+
+<script>
+// ═══ MODULE: FLOW RESUME TAILOR ═══════════════════════════════════════════════
+window.renderFlowAnalyzer = function() {
+  state.flow.step = 'analyze';
+  state.flow.active = true;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const nav = document.getElementById('nav-analyzer');
+  if (nav) nav.classList.add('active');
+  renderAnalyzer();
+};
+
+window.renderFlowResume = function() {
+  state.flow.step = 'resume';
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const nav = document.getElementById('nav-resume');
+  if (nav) nav.classList.add('active');
+  const el = document.getElementById('main-content');
+  el.innerHTML = `
+    <div class="fade-in">
+      ${renderFlowBar('resume')}
+      <div class="module-header">
+        <div class="module-tag">// STEP 2 OF 4</div>
+        <div class="module-title">Resume Tailor</div>
+        <p class="module-desc">Your resume will be rewritten to match this role's language and priorities.</p>
+      </div>
+      ${!state.resume ? `<div class="flag warning" style="margin-bottom:16px">⚠ No resume loaded. <strong onclick="showModule('setup')" style="cursor:pointer;text-decoration:underline">Add it in My Profile first →</strong></div>` : ''}
+      <div class="card">
+        <div class="card-title">📋 Role <span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:0.7rem">${state.flow.company ? state.flow.company + (state.flow.roleTitle ? ' — ' + state.flow.roleTitle : '') : 'Carried over from analysis'}</span></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:0.78rem;color:var(--text-muted)">Using JD from previous step</span>
+          <button class="btn btn-secondary btn-sm" onclick="toggleJDEdit()">Edit JD</button>
+        </div>
+        <div id="jd-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text-muted);max-height:100px;overflow:hidden;line-height:1.5;cursor:pointer" onclick="toggleJDEdit()">
+          ${state.flow.jd ? state.flow.jd.slice(0,300) + (state.flow.jd.length>300?'...':'') : '(No JD loaded)'}
+        </div>
+        <div id="jd-edit-wrap" style="display:none;margin-top:8px">
+          <textarea id="flow-res-jd" rows="8">${state.flow.jd||''}</textarea>
+          <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="saveJDEdit()">Save JD</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚙️ Tailoring Options</div>
+        <div class="field">
+          <div class="field-label">Customization Focus <span style="color:var(--text-dim)">(optional)</span></div>
+          <input type="text" id="flow-res-focus" placeholder="e.g. Emphasize data work, highlight AI experience, downplay consulting" />
+        </div>
+        <button class="btn btn-primary" onclick="runFlowResume()" id="flow-res-btn"><span>Tailor My Resume</span></button>
+      </div>
+      <div id="flow-res-output-wrap" style="display:none;margin-top:20px" class="fade-in">
+        <div class="tabs">
+          <div class="tab active" onclick="switchFlowResumeTab('tailored')" id="ftab-tailored">Tailored Resume</div>
+          <div class="tab" onclick="switchFlowResumeTab('rationale')" id="ftab-rationale">What Changed & Why</div>
+        </div>
+        <div id="flow-tailored-wrap">
+          <div class="card">
+            <div class="output-area" id="flow-res-output"></div>
+            <div class="copy-row"><button class="btn btn-secondary btn-sm" onclick="copyText('flow-res-output')">Copy</button></div>
+          </div>
+        </div>
+        <div id="flow-rationale-wrap" style="display:none">
+          <div class="card"><div class="output-area" id="flow-res-rationale"></div></div>
+        </div>
+        <div class="flow-cta-bar" id="flow-res-cta" style="display:none">
+          <span class="flow-cta-label">Resume ready. Check your ATS score before writing the cover letter →</span>
+          <button class="btn-log" onclick="logApplicationQuick('resume_tailored')">📋 Log</button>
+          <button class="btn btn-secondary btn-sm" onclick="showFlowStep('cover')" style="font-family:'Syne',sans-serif;font-weight:600">Skip to Cover Letter</button>
+          <button class="btn-flow" onclick="showFlowStep('rescore')">Check ATS Score →</button>
+        </div>
+      </div>
+    </div>`;
+};
+
+window.toggleJDEdit = function() {
+  const preview = document.getElementById('jd-preview');
+  const editWrap = document.getElementById('jd-edit-wrap');
+  if (!preview || !editWrap) return;
+  const isOpen = editWrap.style.display !== 'none';
+  editWrap.style.display = isOpen ? 'none' : 'block';
+  preview.style.display = isOpen ? 'block' : 'none';
+};
+window.saveJDEdit = function() {
+  const val = document.getElementById('flow-res-jd')?.value;
+  if (val) state.flow.jd = val;
+  toggleJDEdit();
+};
+window.switchFlowResumeTab = function(tab) {
+  document.getElementById('flow-tailored-wrap').style.display = tab==='tailored'?'block':'none';
+  document.getElementById('flow-rationale-wrap').style.display = tab==='rationale'?'block':'none';
+  document.getElementById('ftab-tailored').classList.toggle('active', tab==='tailored');
+  document.getElementById('ftab-rationale').classList.toggle('active', tab==='rationale');
+};
+
+window.runFlowResume = async function() {
+  if (!state.flow.jd) { alert('No JD loaded. Please go back to Role Analysis.'); return; }
+  const focus = document.getElementById('flow-res-focus')?.value.trim()||'';
+  const btn = document.getElementById('flow-res-btn');
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div> Tailoring...';
+  document.getElementById('flow-res-output-wrap').style.display='block';
+  const bankContext = state.experienceBank ? '\n\nAdditional real experience to draw from:\n'+state.experienceBank : '';
+  const system = `You are an expert resume writer for PM, Product Ops, Operations, and Strategy roles. You tailor resumes to specific job descriptions without fabricating experience. Mirror the JD's language and priorities. Candidate: ${state.profile.name||'the candidate'} | ${state.profile.level} | ${state.profile.location}`;
+  const prompt = `Tailor this resume for the job below.\n\nJOB DESCRIPTION:\n${state.flow.jd}\n\nCURRENT RESUME:\n${state.resume||'(No resume provided)'}\n${bankContext}\n${focus?'Focus on: '+focus+'\n':''}\nRules: Mirror JD language exactly. Weave in experience bank items if relevant. Never invent. Vary sentence structure. No clichés like "results-driven" or "passionate". Output the complete rewritten resume.`;
+  const out = document.getElementById('flow-res-output');
+  out.classList.add('loading');
+  const result = await callClaude(system, prompt, out);
+  if (result) {
+    state.flow.tailoredResume = result;
+    // Get rationale
+    const ratEl = document.getElementById('flow-res-rationale');
+    const ratSystem = `You are a resume consultant explaining specific changes made during tailoring.`;
+    const ratPrompt = `Compare these two resumes and explain what changed and why.\n\nORIGINAL:\n${state.resume||'(none)'}\n\nTAILORED:\n${result}\n\nJOB:\n${state.flow.jd.slice(0,600)}\n\nGive:\n## Top 5 Changes\n[original line → new line → why]\n## Experience Bank Items Used\n## Keywords Woven In\n## What Was De-emphasized\n## Gaps That Couldn't Be Bridged\n## One Thing to Be Ready to Explain`;
+    await callClaude(ratSystem, ratPrompt, ratEl);
+    document.getElementById('flow-res-cta').style.display='flex';
+  }
+  btn.disabled=false; btn.innerHTML='<span>Re-Tailor</span>';
+};
+
+// ═══ MODULE: ATS RE-SCORE ══════════════════════════════════════════════════════
+window.renderFlowRescore = function() {
+  state.flow.step = 'rescore';
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('main-content');
+  const origMatch = state.flow.analysisResult ? state.flow.analysisResult.match(/Overall:\s*(\d+)\/100/i) : null;
+  const tipsMatch = state.flow.analysisResult ? state.flow.analysisResult.match(/ATS OPTIMIZATION TIPS[\s\S]*?(?=##|$)/i) : null;
+  el.innerHTML = `
+    <div class="fade-in">
+      ${renderFlowBar('rescore')}
+      <div class="module-header">
+        <div class="module-tag">// STEP 3 OF 4 · OPTIONAL</div>
+        <div class="module-title">ATS Re-Score</div>
+        <p class="module-desc">Made changes to your tailored resume? Paste your updated version and get a fresh score before writing your cover letter.</p>
+      </div>
+      ${origMatch?`<div class="flag info" style="margin-bottom:20px">📊 Your original ATS score was <strong style="color:var(--accent)">${origMatch[1]}/100</strong>. Paste your updated resume below to see the improvement.</div>`:''}
+      ${tipsMatch?`<div class="card" style="border-color:rgba(255,193,94,0.25);margin-bottom:4px">
+        <div class="card-title">💡 ATS Tips from Your Analysis</div>
+        <div style="font-size:0.82rem;line-height:1.7;color:var(--text-muted);white-space:pre-wrap">${tipsMatch[0].replace(/## ATS OPTIMIZATION TIPS\n?/i,'').replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text)">$1</strong>').replace(/^\d\. /gm,'→ ').trim()}</div>
+      </div>`:''}
+      <div class="card">
+        <div class="card-title">📄 Your Updated Resume</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="loadTailoredResume()" id="load-tailored-btn">↓ Load Tailored Resume</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadOriginalResume()">↓ Load Original Resume</button>
+        </div>
+        <textarea id="rescore-resume" rows="14" placeholder="Paste your updated resume...">${state.flow.tailoredResume||''}</textarea>
+        <button class="btn btn-primary" onclick="runRescore()" id="rescore-btn" style="margin-top:12px"><span>Get New ATS Score</span></button>
+      </div>
+      <div id="rescore-output-wrap" style="display:none;margin-top:20px" class="fade-in">
+        <div id="rescore-delta-banner" style="display:none;margin-bottom:16px"></div>
+        <div id="rescore-score-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px"></div>
+        <div class="card">
+          <div class="card-title">📊 Detailed Re-Score Report</div>
+          <div class="output-area" id="rescore-output" style="white-space:normal;font-family:'DM Sans',sans-serif"></div>
+          <div class="copy-row"><button class="btn btn-secondary btn-sm" onclick="copyText('rescore-output')">Copy</button></div>
+        </div>
+        <div class="flow-cta-bar" id="rescore-cta" style="display:none">
+          <span class="flow-cta-label" id="rescore-cta-label">Score looks good. Ready to write your cover letter →</span>
+          <button class="btn-log" onclick="logApplicationQuick('rescored')">📋 Log</button>
+          <button class="btn btn-secondary btn-sm" onclick="showFlowStep('resume')" style="font-family:'Syne',sans-serif;font-weight:600">← Tweak Resume</button>
+          <button class="btn-flow" onclick="showFlowStep('cover')">Write Cover Letter →</button>
+        </div>
+      </div>
+    </div>`;
+};
+
+window.loadTailoredResume = function() {
+  if (!state.flow.tailoredResume) { alert('No tailored resume yet — go to Step 2 first.'); return; }
+  document.getElementById('rescore-resume').value = state.flow.tailoredResume;
+  const btn = document.getElementById('load-tailored-btn');
+  btn.textContent='✓ Loaded'; setTimeout(()=>btn.textContent='↓ Load Tailored Resume',1500);
+};
+window.loadOriginalResume = function() {
+  if (!state.resume) { alert('No original resume found — add it in My Profile.'); return; }
+  document.getElementById('rescore-resume').value = state.resume;
+};
+
+window.runRescore = async function() {
+  const resumeText = document.getElementById('rescore-resume')?.value.trim();
+  if (!resumeText) { alert('Please paste a resume to score.'); return; }
+  if (!state.flow.jd) { alert('No JD found. Go back to Step 1.'); return; }
+  const btn = document.getElementById('rescore-btn');
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div> Scoring...';
+  document.getElementById('rescore-output-wrap').style.display='block';
+  document.getElementById('rescore-cta').style.display='none';
+  document.getElementById('rescore-delta-banner').style.display='none';
+  const origMatch = state.flow.analysisResult ? state.flow.analysisResult.match(/Overall:\s*(\d+)\/100/i) : null;
+  const origScore = origMatch ? parseInt(origMatch[1]) : null;
+  const system = `You are an ATS scoring engine. Score resumes against job descriptions exactly like enterprise ATS systems. Be precise and specific. The candidate is a Senior Manager/Director level professional.`;
+  const prompt = `Re-score this updated resume against the same job description.\n\nUPDATED RESUME:\n${resumeText}\n\nJOB DESCRIPTION:\n${state.flow.jd}\n\nReturn exactly:\n## ATS MATCH SCORE\nOverall: [X/100]\nKeyword Match: [X/100]\nExperience Level: [X/100]\nSkills Alignment: [X/100]\n\n## WHAT IMPROVED\n- [specific improvement]\n\n## STILL MISSING\n- [gaps remaining]\n\n## KEYWORD GAPS REMAINING\n**Critical missing:** [comma-separated]\n**Nice-to-have missing:** [secondary]\n\n## HARD SKILLS NOW\n| Skill Required | Has? | Gap |\n|---|---|---|\n[top 6 skills: YES/PARTIAL/NO]\n\n## FINAL RECOMMENDATION\n[2-3 sentences on readiness]`;
+  const out = document.getElementById('rescore-output');
+  out.classList.remove('error'); out.innerHTML='<span class="cursor"></span>'; out.classList.add('loading');
+  try {
+    const result = await callClaude(system, prompt, out);
+    if (!result) throw new Error('No response');
+    state.flow.rescoreResult = result;
+    state.flow.rescoreResume = resumeText;
+    const newOverall = result.match(/Overall:\s*(\d+)\/100/i);
+    const newKw = result.match(/Keyword Match:\s*(\d+)\/100/i);
+    const newExp = result.match(/Experience Level:\s*(\d+)\/100/i);
+    const newSkills = result.match(/Skills Alignment:\s*(\d+)\/100/i);
+    const no = newOverall ? parseInt(newOverall[1]) : null;
+    const nk = newKw ? parseInt(newKw[1]) : null;
+    const ne = newExp ? parseInt(newExp[1]) : null;
+    const ns = newSkills ? parseInt(newSkills[1]) : null;
+    const scoreColor = n => n>=75?'#7ecba1':n>=55?'#ffc15e':'#e07a5f';
+    if (origScore!==null && no!==null) {
+      const delta = no-origScore; const up = delta>0; const same = delta===0;
+      const banner = document.getElementById('rescore-delta-banner');
+      banner.style.display='block';
+      banner.innerHTML=`<div style="display:flex;align-items:flex-start;gap:16px;padding:16px 20px;border-radius:10px;border:1px solid ${up?'rgba(126,203,161,0.3)':same?'rgba(133,117,110,0.3)':'rgba(224,122,95,0.3)'};background:${up?'rgba(126,203,161,0.06)':same?'rgba(133,117,110,0.06)':'rgba(224,122,95,0.06)'}">
+        <div style="font-size:2rem;flex-shrink:0">${up?'📈':same?'➡️':'📉'}</div>
+        <div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:${up?'#7ecba1':same?'var(--text-muted)':'#e07a5f'}">${up?'+'+delta+' points':same?'No change':delta+' points'} <span style="font-size:0.75rem;font-weight:400;color:var(--text-muted);margin-left:8px">${origScore}/100 → ${no}/100</span></div>
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-top:3px">${up&&delta>=10?'Strong improvement — meaningfully more ATS-ready.':up?'Incremental improvement. Review remaining gaps.':same?'Score unchanged. Check gaps for keywords to add.':'Score dropped — review your changes.'}</div></div>
+        <div style="margin-left:auto;text-align:center;flex-shrink:0"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:2.2rem;color:${scoreColor(no)}">${no}</div><div style="font-family:'DM Mono',monospace;font-size:0.55rem;color:var(--text-muted);text-transform:uppercase">New Score</div></div>
+      </div>`;
+    }
+    document.getElementById('rescore-score-grid').innerHTML = [[nk,'Keywords'],[ne,'Exp. Level'],[ns,'Skills']].map(([val,label])=>val?`<div class="score-card"><div class="score-label">${label}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${val}%;background:${scoreColor(val)};border-radius:3px"></div></div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;color:${scoreColor(val)}">${val}</div></div></div>`:'').join('');
+    const formatted = result
+      .replace(/^## (.+)$/gm,'<div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:0.9rem;color:var(--accent);letter-spacing:0.03em;margin:20px 0 10px;padding-top:16px;border-top:1px solid var(--border)">$1</div>')
+      .replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text)">$1</strong>')
+      .replace(/^\| (.+) \|$/gm,row=>{if(row.includes('---'))return'';const cells=row.split('|').filter(c=>c.trim());return`<tr>${cells.map(c=>{const v=c.trim();const col=v==='YES'?'#7ecba1':v==='NO'?'#e07a5f':v==='PARTIAL'?'#ffc15e':'inherit';return`<td style="padding:6px 10px;border:1px solid var(--border);font-size:0.78rem;font-family:'DM Mono',monospace;${col!=='inherit'?'color:'+col+';font-weight:600':''}">${v}</td>`}).join('')}</tr>`;})
+      .replace(/((?:<tr>.*<\/tr>\n?)+)/gs,'<table style="width:100%;border-collapse:collapse;margin:8px 0">$1</table>')
+      .replace(/^- (.+)$/gm,'<div style="display:flex;gap:8px;margin:4px 0;font-size:0.83rem"><span style="color:var(--accent);flex-shrink:0">→</span><span>$1</span></div>')
+      .replace(/\n/g,'<br>');
+    out.innerHTML=formatted;
+    const ctaLabel=document.getElementById('rescore-cta-label');
+    if(no>=75) ctaLabel.textContent=`Strong ATS score (${no}/100). You're ready — write your cover letter →`;
+    else if(no>=60) ctaLabel.textContent=`Decent score (${no}/100). Proceed or make one more pass.`;
+    else ctaLabel.textContent=`Score still below 60 (${no}/100). Consider tweaking more or address gaps in cover letter.`;
+    document.getElementById('rescore-cta').style.display='flex';
+  } catch(err) { out.classList.add('error'); out.textContent='⚠ '+err.message; }
+  btn.disabled=false; btn.innerHTML='<span>Re-Score Again</span>';
+};
+</script>
+
+
+<script>
+// ═══ MODULE: FLOW COVER LETTER (with feedback + versioning) ═══════════════════
+window.renderFlowCover = function() {
+  state.flow.step = 'cover';
+  state.flow.coverVersions = state.flow.coverVersions || [];
+  state.flow.selectedPresets = [];
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const nav = document.getElementById('nav-cover');
+  if (nav) nav.classList.add('active');
+  const el = document.getElementById('main-content');
+  el.innerHTML = `
+    <div class="fade-in">
+      ${renderFlowBar('cover')}
+      <div class="module-header">
+        <div class="module-tag">// STEP 4 OF 4</div>
+        <div class="module-title">Cover Letter</div>
+        <p class="module-desc">JD is already loaded. Generate, then refine with feedback until it sounds exactly right.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Role <span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:0.7rem">${state.flow.company||''} ${state.flow.roleTitle?'— '+state.flow.roleTitle:''}</span></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:0.78rem;color:var(--text-muted)">JD carried over from analysis</span>
+          <button class="btn btn-secondary btn-sm" onclick="toggleCovJDEdit()">Edit JD</button>
+        </div>
+        <div id="cov-jd-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text-muted);max-height:80px;overflow:hidden;line-height:1.5">
+          ${state.flow.jd ? state.flow.jd.slice(0,280)+'...' : '(No JD)'}
+        </div>
+        <div id="cov-jd-edit-wrap" style="display:none;margin-top:8px">
+          <textarea id="flow-cov-jd-input" rows="7">${state.flow.jd||''}</textarea>
+          <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="saveCovJDEdit()">Save JD</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🏢 Company Context</div>
+        <div class="two-col">
+          <div class="field"><div class="field-label">Company Name</div><input type="text" id="flow-cov-company" value="${state.flow.company||''}" placeholder="e.g. Uber" /></div>
+          <div class="field"><div class="field-label">What excites you about this company?</div><input type="text" id="flow-cov-why" placeholder="e.g. AI-first ops strategy, recent Series B..." /></div>
+        </div>
+        <div class="field"><div class="field-label">Specific Experience to Highlight</div><input type="text" id="flow-cov-highlight" placeholder="e.g. My ops framework build, the 40% efficiency gain..." /></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚙️ Options</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="flow-cov-aipolicy" checked style="accent-color:var(--accent)" /> Run AI policy check</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="flow-cov-short" style="accent-color:var(--accent)" /> Short version (3 paragraphs)</label>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="runFlowCover()" id="flow-cov-btn"><span>Generate Cover Letter</span></button>
+      <div id="flow-cov-policy-wrap" style="display:none;margin-top:20px" class="fade-in"></div>
+      <div id="flow-cov-output-wrap" style="display:none;margin-top:20px" class="fade-in">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div class="card-title" style="margin-bottom:0">✉️ Your Cover Letter <span id="cov-version-label" style="color:var(--accent2)">v1</span></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary btn-sm" onclick="copyText('flow-cov-output')">Copy</button>
+              <button class="btn btn-secondary btn-sm" onclick="toggleCovEdit()" id="cov-edit-btn">✏️ Edit Directly</button>
+            </div>
+          </div>
+          <div class="output-area" id="flow-cov-output" style="white-space:pre-wrap"></div>
+          <textarea id="flow-cov-edit-area" rows="14" style="display:none;width:100%;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.83rem;line-height:1.7;padding:20px;resize:vertical;outline:none;margin-top:8px"></textarea>
+          <div id="cov-edit-actions" style="display:none;margin-top:10px;justify-content:flex-end;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="cancelCovEdit()">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="saveCovEdit()">Save Edits</button>
+          </div>
+        </div>
+        <div id="cov-version-history" style="display:none;margin-bottom:16px">
+          <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Version History</div>
+          <div id="cov-versions-list" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        </div>
+        <div class="card" style="border-color:rgba(89,165,216,0.3);background:linear-gradient(135deg,rgba(89,165,216,0.04) 0%,var(--surface) 100%)">
+          <div class="card-title">🔄 Refine This Letter <span>Tell Claude what to change — it'll keep what works</span></div>
+          <div style="margin-bottom:16px">
+            <div class="field-label" style="margin-bottom:8px">Quick Tone Adjustments</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              ${[['More confident','Make it sound more assertive and self-assured — less hedging'],['More concise','Cut it down, tighter sentences, remove any fluff'],['More conversational','Make it sound warmer and more human, less formal'],['More formal','Make the tone more professional and executive-level'],['Stronger opening','Rewrite just the first paragraph to be a stronger hook'],['Stronger close','Make the closing paragraph more decisive and action-oriented'],['Less AI-sounding','Vary sentence structure more, remove any clichéd phrases'],['More specific','Add more concrete examples or metrics from my background']].map(([label,hint])=>`<button class="tone-preset-btn" onclick="applyTonePreset(this,'${hint.replace(/'/g,"\\'")}')"> ${label}</button>`).join('')}
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">Custom Feedback <span style="color:var(--text-dim)">(or add to a preset above)</span></div>
+            <textarea id="cov-feedback-input" rows="3" placeholder="e.g. The second paragraph feels too generic — make it more specific to their marketplace product challenges..." style="font-family:'DM Sans',sans-serif;font-size:0.83rem"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn-flow" onclick="regenerateWithFeedback()" id="regen-btn">↻ Regenerate with Feedback</button>
+            <button class="btn btn-secondary btn-sm" onclick="clearFeedback()">Clear</button>
+            <span id="regen-version-counter" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text-dim);margin-left:4px"></span>
+          </div>
+        </div>
+        <div class="flow-cta-bar" id="flow-cov-cta" style="display:none">
+          <span class="flow-cta-label">🎉 Cover letter ready. Log this application!</span>
+          <button class="btn-log" onclick="logApplicationQuick('full_flow')">📋 Log Application</button>
+          <button class="btn-flow" onclick="startNewFlow()">↺ Start New Role</button>
+        </div>
+      </div>
+    </div>`;
+};
+
+window.toggleCovJDEdit = function() {
+  const preview = document.getElementById('cov-jd-preview');
+  const wrap = document.getElementById('cov-jd-edit-wrap');
+  if (!wrap) return;
+  wrap.style.display = wrap.style.display==='none' ? 'block' : 'none';
+};
+window.saveCovJDEdit = function() {
+  const val = document.getElementById('flow-cov-jd-input')?.value;
+  if (val) state.flow.jd = val;
+  toggleCovJDEdit();
+};
+
+window.applyTonePreset = function(btn, hint) {
+  btn.classList.toggle('selected');
+  if (!state.flow.selectedPresets) state.flow.selectedPresets = [];
+  const idx = state.flow.selectedPresets.indexOf(hint);
+  if (idx===-1) state.flow.selectedPresets.push(hint);
+  else state.flow.selectedPresets.splice(idx,1);
+};
+window.clearFeedback = function() {
+  const fi = document.getElementById('cov-feedback-input');
+  if (fi) fi.value='';
+  document.querySelectorAll('.tone-preset-btn.selected').forEach(b=>b.classList.remove('selected'));
+  state.flow.selectedPresets = [];
+};
+window.toggleCovEdit = function() {
+  const out = document.getElementById('flow-cov-output');
+  const editArea = document.getElementById('flow-cov-edit-area');
+  const editBtn = document.getElementById('cov-edit-btn');
+  const actions = document.getElementById('cov-edit-actions');
+  if (!out||!editArea) return;
+  const isEditing = editArea.style.display!=='none';
+  if (!isEditing) { editArea.value=out.textContent; out.style.display='none'; editArea.style.display='block'; actions.style.display='flex'; if(editBtn) editBtn.textContent='👁 Preview'; }
+  else { cancelCovEdit(); }
+};
+window.saveCovEdit = function() {
+  const editArea = document.getElementById('flow-cov-edit-area');
+  const out = document.getElementById('flow-cov-output');
+  if (!editArea||!out) return;
+  const newText = editArea.value;
+  out.textContent = newText;
+  state.flow.coverLetter = newText;
+  addCoverVersion(newText,'Manual edit');
+  cancelCovEdit();
+};
+window.cancelCovEdit = function() {
+  const out=document.getElementById('flow-cov-output'), editArea=document.getElementById('flow-cov-edit-area'), editBtn=document.getElementById('cov-edit-btn'), actions=document.getElementById('cov-edit-actions');
+  if(out) out.style.display='block'; if(editArea) editArea.style.display='none'; if(actions) actions.style.display='none'; if(editBtn) editBtn.textContent='✏️ Edit Directly';
+};
+window.addCoverVersion = function(text,label) {
+  if (!state.flow.coverVersions) state.flow.coverVersions=[];
+  state.flow.coverVersions.push({text,label,ts:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})});
+  state.flow.currentCoverVersion = state.flow.coverVersions.length-1;
+  renderVersionHistory();
+  const vLabel=document.getElementById('cov-version-label'); if(vLabel) vLabel.textContent='v'+state.flow.coverVersions.length;
+  const counter=document.getElementById('regen-version-counter'); if(counter) counter.textContent=state.flow.coverVersions.length+' version'+(state.flow.coverVersions.length>1?'s':'');
+};
+window.renderVersionHistory = function() {
+  const wrap=document.getElementById('cov-version-history'), list=document.getElementById('cov-versions-list');
+  if(!wrap||!list) return;
+  if((state.flow.coverVersions||[]).length<=1){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  list.innerHTML=state.flow.coverVersions.map((v,i)=>`<div class="cov-version-chip ${i===state.flow.currentCoverVersion?'current':''}" onclick="loadCoverVersion(${i})">v${i+1} · ${v.label} · ${v.ts}</div>`).join('');
+};
+window.loadCoverVersion = function(idx) {
+  const v=(state.flow.coverVersions||[])[idx]; if(!v) return;
+  state.flow.currentCoverVersion=idx; state.flow.coverLetter=v.text;
+  const out=document.getElementById('flow-cov-output'); if(out) out.textContent=v.text;
+  const vLabel=document.getElementById('cov-version-label'); if(vLabel) vLabel.textContent='v'+(idx+1);
+  renderVersionHistory();
+};
+
+window.runFlowCover = async function() {
+  const jd=state.flow.jd; if(!jd){alert('No JD loaded.');return;}
+  const company=document.getElementById('flow-cov-company')?.value.trim()||'';
+  const why=document.getElementById('flow-cov-why')?.value.trim()||'';
+  const highlight=document.getElementById('flow-cov-highlight')?.value.trim()||'';
+  const checkPolicy=document.getElementById('flow-cov-aipolicy')?.checked;
+  const shortVersion=document.getElementById('flow-cov-short')?.checked;
+  state.flow.company = company||state.flow.company;
+  const btn=document.getElementById('flow-cov-btn');
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div> Generating...';
+  if(checkPolicy){
+    document.getElementById('flow-cov-policy-wrap').style.display='block';
+    const pEl=document.createElement('div'); pEl.className='card';
+    pEl.innerHTML='<div class="card-title">🤖 AI Policy Check</div><div class="output-area" id="flow-policy-out"></div>';
+    document.getElementById('flow-cov-policy-wrap').innerHTML='';
+    document.getElementById('flow-cov-policy-wrap').appendChild(pEl);
+    await callClaude('You are an expert at identifying when companies screen for AI-generated job applications.',`Review this JD for signals: (1) prohibits AI cover letters, (2) uses AI detection, (3) asks for a specific word/phrase, (4) requires genuine human answers. Give POLICY RISK: HIGH/MEDIUM/LOW, what signals this, and recommendation.\n\nJD: ${jd}`,document.getElementById('flow-policy-out'));
+  }
+  document.getElementById('flow-cov-output-wrap').style.display='block';
+  document.getElementById('flow-cov-cta').style.display='none';
+  const bankContext = state.experienceBank ? '\n\nAdditional real experience:\n'+state.experienceBank : '';
+  const system = `You are an expert cover letter writer for PM, Product Ops, Operations, and Strategy roles. Human voice, direct, confident. No AI clichés, no buzzwords.\n\nCandidate: ${state.profile.name||'the candidate'} | ${state.profile.level} | ${state.profile.location} | ${state.profile.industries}${state.coverLetter?'\n\nVoice reference:\n'+state.coverLetter.slice(0,500):''}`;
+  const prompt = `Write a cover letter.\n\nJD: ${jd}\n${company?'Company: '+company+'\n':''}${why?'Why excited: '+why+'\n':''}${highlight?'Highlight: '+highlight+'\n':''}${state.resume?'Resume context: '+state.resume.slice(0,800)+'\n':''}${bankContext}\n${shortVersion?'3 tight paragraphs.':'4 paragraphs: hook, fit, why company, close.'}\n\nHuman-sounding, specific, no buzzwords. Vary sentence structure.`;
+  const out=document.getElementById('flow-cov-output');
+  const result = await callClaude(system,prompt,out);
+  if(result){
+    state.flow.coverLetter=result;
+    state.flow.coverVersions=[];
+    addCoverVersion(result,'Initial draft');
+    document.getElementById('flow-cov-cta').style.display='flex';
+  }
+  btn.disabled=false; btn.innerHTML='<span>Regenerate</span>';
+};
+
+window.regenerateWithFeedback = async function() {
+  const currentLetter=state.flow.coverLetter; if(!currentLetter){alert('Generate a cover letter first.');return;}
+  const customFeedback=document.getElementById('cov-feedback-input')?.value.trim()||'';
+  const presets=state.flow.selectedPresets||[];
+  if(!customFeedback&&presets.length===0){alert('Select a tone preset or add custom feedback first.');return;}
+  const btn=document.getElementById('regen-btn');
+  btn.disabled=true; btn.innerHTML='<div class="spinner" style="border-color:rgba(15,26,32,0.3);border-top-color:#0f1a20;width:14px;height:14px"></div> Regenerating...';
+  const presetLabels=Array.from(document.querySelectorAll('.tone-preset-btn.selected')).map(b=>b.textContent.trim());
+  const versionLabel=presetLabels.length>0?presetLabels.join(' + ')+(customFeedback?'+custom':''):'Custom feedback';
+  const allFeedback=[presets.length>0?'Tone adjustments:\n'+presets.map(p=>'• '+p).join('\n'):'',customFeedback?'Additional feedback:\n'+customFeedback:''].filter(Boolean).join('\n\n');
+  const system=`You are an expert cover letter editor. Refine existing cover letters based on specific feedback while preserving what already works. Never start from scratch — keep the structure, key points, and voice; just apply the requested changes precisely.\n\nCandidate: ${state.profile.name||'the candidate'} | ${state.profile.level} | ${state.profile.location}`;
+  const prompt=`Current cover letter:\n<current_letter>\n${currentLetter}\n</current_letter>\n\nJob:\n<jd>\n${state.flow.jd}\n</jd>\n${state.resume?'\nResume context: '+state.resume.slice(0,600)+'\n':''}\nFeedback:\n<feedback>\n${allFeedback}\n</feedback>\n\nApply feedback precisely. Keep what works. Output only the revised cover letter.`;
+  const out=document.getElementById('flow-cov-output');
+  out.style.whiteSpace='pre-wrap';
+  const result=await callClaude(system,prompt,out);
+  if(result){ state.flow.coverLetter=result; addCoverVersion(result,versionLabel); document.getElementById('flow-cov-cta').style.display='flex'; clearFeedback(); }
+  btn.disabled=false; btn.innerHTML='↻ Regenerate with Feedback';
+};
+</script>
+
+
+<script>
+// ═══ MODULE: COLD OUTREACH ════════════════════════════════════════════════════
+window.renderColdOutreach = function(preloadAppId) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const nav = document.getElementById('nav-outreach');
+  if (nav) nav.classList.add('active');
+  const apps = state.applications || [];
+  let linkedApp = null;
+  if (preloadAppId) { linkedApp = apps.find(a => a.id === preloadAppId); }
+  else if (state.flow?.company || state.flow?.roleTitle) {
+    linkedApp = apps.find(a => a.company === state.flow.company && a.role === state.flow.roleTitle);
+  }
+  window._linkedAppId = linkedApp ? linkedApp.id : null;
+  window._outreachPresets = [];
+  const el = document.getElementById('main-content');
+  el.innerHTML = `
+    <div class="fade-in">
+      <div class="module-header">
+        <div class="module-tag">// MODULE 05</div>
+        <div class="module-title">Cold Outreach</div>
+        <p class="module-desc">Generate tailored cold emails and LinkedIn DMs. Link to a role and log the contact directly to your Application Tracker.</p>
+      </div>
+      <div class="card" id="outreach-role-card">
+        <div class="card-title">🎯 Which Role Is This For?</div>
+        ${apps.length>0?`
+        <div style="margin-bottom:14px">
+          <div class="field-label" style="margin-bottom:8px">Link to a logged application</div>
+          <div style="display:flex;flex-direction:column;gap:6px" id="app-link-list">
+            ${apps.map(a=>`<div onclick="selectLinkedApp(${a.id})" id="app-link-${a.id}" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border:1px solid ${linkedApp?.id===a.id?'var(--accent)':'var(--border)'};border-radius:9px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="if(window._linkedAppId!== ${a.id})this.style.borderColor='var(--border)'"><div style="width:10px;height:10px;border-radius:50%;background:${linkedApp?.id===a.id?'var(--accent)':'var(--border)'};flex-shrink:0;transition:background 0.15s" id="app-link-dot-${a.id}"></div><div style="flex:1"><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem">${a.company}</div><div style="font-size:0.75rem;color:var(--text-muted)">${a.role}</div></div><div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--text-dim)">${a.dateAdded}</div></div>`).join('')}
+            <div onclick="selectLinkedApp(null)" id="app-link-none" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border:1px solid ${!linkedApp?'var(--accent)':'var(--border)'};border-radius:9px;cursor:pointer;transition:all 0.15s"><div style="width:10px;height:10px;border-radius:50%;background:${!linkedApp?'var(--accent)':'var(--border)'};flex-shrink:0" id="app-link-dot-none"></div><div style="font-size:0.82rem;color:var(--text-muted)">Not linked to a logged application</div></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:0.72rem;color:var(--text-dim);flex-shrink:0">or fill in manually</span><div style="flex:1;height:1px;background:var(--border)"></div></div>`:''}
+        <div class="two-col">
+          <div class="field"><div class="field-label">Company</div><input type="text" id="out-company" placeholder="e.g. Notion" value="${linkedApp?.company||state.flow?.company||''}" /></div>
+          <div class="field"><div class="field-label">Role Title</div><input type="text" id="out-role" placeholder="e.g. Sr. PM - Growth" value="${linkedApp?.role||state.flow?.roleTitle||''}" /></div>
+        </div>
+        <div class="field"><div class="field-label">Job Description <span style="color:var(--text-dim)">(for personalization)</span></div><textarea id="out-jd" rows="4" placeholder="Paste JD...">${linkedApp?.jd||state.flow?.jd||''}</textarea></div>
+        <div class="field"><div class="field-label">What do you know about this company? <span style="color:var(--text-dim)">(optional)</span></div><input type="text" id="out-context" placeholder="e.g. Just raised Series B, expanding marketplace ops..." /></div>
+      </div>
+      <div class="card">
+        <div class="card-title">👤 Contact Details</div>
+        <div class="flag info" style="margin-bottom:14px">💡 Claude will tell you exactly who to search for on LinkedIn. Fill in what you know — even partial info helps personalize the message.</div>
+        <div class="two-col">
+          <div class="field"><div class="field-label">Contact Name <span style="color:var(--text-dim)">(if found)</span></div><input type="text" id="out-name" placeholder="e.g. Sarah Chen" /></div>
+          <div class="field"><div class="field-label">Contact Title <span style="color:var(--text-dim)">(if known)</span></div><input type="text" id="out-title" placeholder="e.g. Head of Product Operations" /></div>
+        </div>
+        <div class="two-col">
+          <div class="field"><div class="field-label">Email <span style="color:var(--text-dim)">(if found)</span></div><input type="email" id="out-email-addr" placeholder="e.g. sarah@company.com" /></div>
+          <div class="field"><div class="field-label">LinkedIn Profile URL <span style="color:var(--text-dim)">(if found)</span></div><input type="url" id="out-linkedin-url" placeholder="e.g. linkedin.com/in/sarahchen" /></div>
+        </div>
+        <div class="field">
+          <div class="field-label">Outreach Channel</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="out-ch-email" checked style="accent-color:var(--accent)" /> Cold Email</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="out-ch-linkedin" checked style="accent-color:var(--accent)" /> LinkedIn DM</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="out-ch-connection" style="accent-color:var(--accent)" /> Connection Note</label>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="runOutreach()" id="out-btn"><span>Generate Outreach</span></button>
+      </div>
+      <div id="out-output-wrap" style="display:none;margin-top:20px" class="fade-in">
+        <div class="card" style="border-color:rgba(255,193,94,0.25)">
+          <div class="card-title">🔍 Who to Find on LinkedIn</div>
+          <div id="out-targeting" style="font-family:'DM Sans',sans-serif;font-size:0.83rem"></div>
+        </div>
+        <div id="out-email-wrap" style="display:none"><div class="card"><div class="card-title">📧 Cold Email <span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-muted)">SUBJECT LINE INCLUDED</span></div><div class="output-area" id="out-email" style="white-space:pre-wrap"></div><div class="copy-row"><button class="btn btn-secondary btn-sm" onclick="copyText('out-email')">Copy</button></div></div></div>
+        <div id="out-linkedin-wrap" style="display:none"><div class="card"><div class="card-title">💼 LinkedIn DM <span style="color:var(--text-muted)">~300 char limit</span></div><div class="output-area" id="out-linkedin" style="white-space:pre-wrap"></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><span id="out-li-charcount" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text-muted)"></span><button class="btn btn-secondary btn-sm" onclick="copyText('out-linkedin')">Copy</button></div></div></div>
+        <div id="out-connection-wrap" style="display:none"><div class="card"><div class="card-title">🤝 Connection Note <span style="color:var(--text-muted)">~200 char limit</span></div><div class="output-area" id="out-connection" style="white-space:pre-wrap"></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><span id="out-conn-charcount" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text-muted)"></span><button class="btn btn-secondary btn-sm" onclick="copyText('out-connection')">Copy</button></div></div></div>
+        <div class="card" style="border-color:rgba(89,165,216,0.3)">
+          <div class="card-title">🔄 Refine Outreach</div>
+          <div class="field"><textarea id="out-feedback" rows="2" placeholder="e.g. Make the email shorter, lead with the marketplace ops angle..."></textarea></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${['Shorter & punchier','More personal','Less formal','Focus on shared background','More direct ask'].map(t=>`<button class="tone-preset-btn" onclick="this.classList.toggle('selected');addOutreachPreset(this,'${t}')">${t}</button>`).join('')}</div>
+          <button class="btn-flow" onclick="refineOutreach()">↻ Refine</button>
+        </div>
+        <div class="card" id="out-log-card" style="border-color:rgba(126,203,161,0.3);background:linear-gradient(135deg,rgba(126,203,161,0.04) 0%,var(--surface) 100%)">
+          <div class="card-title">📋 Log This Outreach to Tracker</div>
+          <div id="out-log-status" style="font-size:0.82rem;color:var(--text-muted);margin-bottom:14px">${linkedApp?`<span style="color:var(--success)">✓ Will log to: <strong style="color:var(--text)">${linkedApp.company} — ${linkedApp.role}</strong></span>`:'<span style="color:var(--text-muted)">Not linked to an application — select one above or it will create a new entry.</span>'}</div>
+          <div class="two-col">
+            <div class="field"><div class="field-label">Contact Name</div><input type="text" id="log-contact-name" placeholder="e.g. Sarah Chen" /></div>
+            <div class="field"><div class="field-label">Their Title</div><input type="text" id="log-contact-title" placeholder="e.g. Head of Product Ops" /></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><div class="field-label">Email</div><input type="email" id="log-contact-email" placeholder="sarah@company.com" /></div>
+            <div class="field"><div class="field-label">LinkedIn URL</div><input type="url" id="log-contact-linkedin" placeholder="linkedin.com/in/sarahchen" /></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><div class="field-label">Channel Used</div>
+              <select id="log-contact-channel" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.83rem">
+                <option>LinkedIn DM</option><option>Email</option><option>LinkedIn Connection</option><option>Phone</option><option>Referral</option><option>In Person</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field"><div class="field-label">Date Contacted</div><input type="date" id="log-contact-date" value="${new Date().toISOString().split('T')[0]}" /></div>
+          </div>
+          <div class="field"><div class="field-label">Note <span style="color:var(--text-dim)">(optional)</span></div><input type="text" id="log-contact-note" placeholder="e.g. Sent cold email via Hunter.io address, waiting on reply..." /></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="logOutreachToTracker()" id="log-outreach-btn">📋 Log to App Tracker</button>
+            <button class="btn btn-secondary" onclick="showModule('tracker')" style="font-size:0.82rem">View Tracker →</button>
+          </div>
+          <div id="log-outreach-confirm" style="display:none;margin-top:12px"></div>
+        </div>
+      </div>
+    </div>`;
+  // Sync contact detail fields to log fields
+  setTimeout(() => {
+    [['out-name','log-contact-name'],['out-title','log-contact-title'],['out-email-addr','log-contact-email'],['out-linkedin-url','log-contact-linkedin']].forEach(([src,dst]) => {
+      const s=document.getElementById(src), d=document.getElementById(dst);
+      if(s&&d) s.addEventListener('input',()=>d.value=s.value);
+    });
+  },100);
+};
+
+window.selectLinkedApp = function(id) {
+  window._linkedAppId = id;
+  (state.applications||[]).forEach(a => {
+    const row=document.getElementById(`app-link-${a.id}`), dot=document.getElementById(`app-link-dot-${a.id}`);
+    if(row) row.style.borderColor=a.id===id?'var(--accent)':'var(--border)';
+    if(dot) dot.style.background=a.id===id?'var(--accent)':'var(--border)';
+  });
+  const noneRow=document.getElementById('app-link-none'), noneDot=document.getElementById('app-link-dot-none');
+  if(noneRow) noneRow.style.borderColor=id===null?'var(--accent)':'var(--border)';
+  if(noneDot) noneDot.style.background=id===null?'var(--accent)':'var(--border)';
+  const statusEl=document.getElementById('out-log-status');
+  if(statusEl){
+    if(id){ const app=(state.applications||[]).find(a=>a.id===id);
+      statusEl.innerHTML=`<span style="color:var(--success)">✓ Will log to: <strong style="color:var(--text)">${app?.company} — ${app?.role}</strong></span>`;
+      const compEl=document.getElementById('out-company'), roleEl=document.getElementById('out-role'), jdEl=document.getElementById('out-jd');
+      if(compEl&&app) compEl.value=app.company||''; if(roleEl&&app) roleEl.value=app.role||''; if(jdEl&&app) jdEl.value=app.jd||'';
+    } else { statusEl.innerHTML='<span style="color:var(--text-muted)">Not linked — will create a new application entry.</span>'; }
+  }
+};
+
+window.addOutreachPreset = function(btn, val) {
+  if (!window._outreachPresets) window._outreachPresets = [];
+  const idx=window._outreachPresets.indexOf(val);
+  if(idx===-1) window._outreachPresets.push(val); else window._outreachPresets.splice(idx,1);
+};
+
+window.renderTargetingOutput = function(rawText) {
+  const container = document.getElementById('out-targeting');
+  if (!container) return;
+  const sectionDefs = [
+    {key:'1',icon:'🎯',label:'Best Person to Contact',color:'#ffc15e',bg:'rgba(255,193,94,0.06)',border:'rgba(255,193,94,0.2)'},
+    {key:'2',icon:'🔍',label:'LinkedIn Search Strings',color:'#59a5d8',bg:'rgba(89,165,216,0.06)',border:'rgba(89,165,216,0.2)'},
+    {key:'3',icon:'📋',label:'Recruiter to Also Contact',color:'#85756e',bg:'rgba(133,117,110,0.06)',border:'rgba(133,117,110,0.2)'},
+    {key:'4',icon:'💡',label:'What to Reference',color:'#7ecba1',bg:'rgba(126,203,161,0.06)',border:'rgba(126,203,161,0.2)'},
+  ];
+  const sectionRegex = /##\s*\d+\.\s*([^\n]+)\n([\s\S]*?)(?=\n##\s*\d+\.|\s*$)/g;
+  const parsed = {}; let match; let count=0;
+  while ((match = sectionRegex.exec(rawText)) !== null) { count++; parsed[String(count)] = {title:match[1].trim().replace(/\*/g,''), body:match[2].trim()}; }
+  if (Object.keys(parsed).length===0) {
+    container.style.whiteSpace='pre-wrap';
+    container.innerHTML=rawText.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-family:\'DM Mono\',monospace;font-size:0.78rem">$1</code>');
+    return;
+  }
+  const formatBody = body => body
+    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--text)">$1</strong>')
+    .replace(/`([^`]+)`/g,'<code style="display:inline-block;background:var(--surface);border:1px solid var(--border);padding:3px 10px;border-radius:6px;font-family:\'DM Mono\',monospace;font-size:0.78rem;color:var(--accent);margin:2px 0">$1</code>')
+    .replace(/^\d+\.\s+(.+)$/gm,'<div style="display:flex;gap:8px;margin:6px 0;align-items:flex-start"><span style="font-family:\'DM Mono\',monospace;font-size:0.65rem;color:var(--text-dim);flex-shrink:0;margin-top:2px">→</span><span>$1</span></div>')
+    .replace(/^[-•]\s+(.+)$/gm,'<div style="display:flex;gap:8px;margin:4px 0;align-items:flex-start"><span style="color:var(--accent);flex-shrink:0">·</span><span>$1</span></div>')
+    .replace(/\n{2,}/g,'<div style="height:6px"></div>').replace(/\n/g,'<br>');
+  container.style.whiteSpace='normal';
+  container.innerHTML=`<div style="display:flex;flex-direction:column;gap:12px">${sectionDefs.map(def=>{const sec=parsed[def.key];if(!sec)return'';return`<div style="border:1px solid ${def.border};border-radius:10px;overflow:hidden"><div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:${def.bg};border-bottom:1px solid ${def.border}"><span style="font-size:1rem">${def.icon}</span><span style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;color:${def.color};letter-spacing:0.02em">${def.label}</span></div><div style="padding:12px 14px;font-size:0.82rem;line-height:1.7;color:var(--text-muted)">${formatBody(sec.body)}</div></div>`;}).join('')}</div>`;
+};
+
+window.runOutreach = async function() {
+  const company=document.getElementById('out-company')?.value.trim()||'';
+  const role=document.getElementById('out-role')?.value.trim()||'';
+  const jd=document.getElementById('out-jd')?.value.trim()||'';
+  const context=document.getElementById('out-context')?.value.trim()||'';
+  const contactName=document.getElementById('out-name')?.value.trim()||'';
+  const contactTitle=document.getElementById('out-title')?.value.trim()||'';
+  const wantEmail=document.getElementById('out-ch-email')?.checked;
+  const wantLinkedIn=document.getElementById('out-ch-linkedin')?.checked;
+  const wantConnection=document.getElementById('out-ch-connection')?.checked;
+  if(!company&&!jd){alert('Please enter at least a company name or job description.');return;}
+  const btn=document.getElementById('out-btn'); btn.disabled=true; btn.innerHTML='<div class="spinner"></div> Generating...';
+  document.getElementById('out-output-wrap').style.display='block';
+  const system=`You are an expert at cold outreach for job seekers. You write messages that are short, specific, human, and get replies.\n\nCandidate:\n- Name: ${state.profile?.name||'the candidate'}\n- Level: ${state.profile?.level||'Senior Manager/Director'}\n- Background: ${state.profile?.industries||''}\n- Skills: ${state.profile?.skills||''}\n- Location: ${state.profile?.location||'NYC'}${state.resume?'\nResume summary: '+state.resume.slice(0,600):''}`;
+  const targetingEl=document.getElementById('out-targeting');
+  targetingEl.innerHTML='<span class="cursor"></span>';
+  const targetingResult = await callClaude(system,`For a ${state.profile?.level||'Senior Manager'} candidate applying to "${role||'this role'}" at ${company||'this company'}, give exactly these 4 sections:\n\n## 1. BEST PERSON TO CONTACT\nList 2-3 specific job titles. Separate into **Primary targets** and **Secondary targets**.\n\n## 2. LINKEDIN SEARCH STRINGS\n**Primary:** \`[exact search string]\`\n**Secondary:** \`[alternate search]\`\n\n## 3. RECRUITER TO ALSO CONTACT\nThe title of the recruiter likely handling this role.\n\n## 4. WHAT TO REFERENCE\n2 specific things to mention showing research — real things about this company/role.\n\n${jd?'JD: '+jd.slice(0,600):''}${context?'\nCompany context: '+context:''}`,targetingEl);
+  if(targetingResult) renderTargetingOutput(targetingResult);
+  if(wantEmail){
+    document.getElementById('out-email-wrap').style.display='block';
+    await callClaude(system,`Write a cold email from ${state.profile?.name||'the candidate'} to ${contactName?(contactName+(contactTitle?', '+contactTitle:'')):'the hiring manager'} at ${company||'the company'} about the ${role||'open role'}.\n\nRules: Subject line specific, not generic. 4-6 sentences max. Lead with one specific thing. One relevant achievement. Soft ask for 15-min call. No filler openers.\n\nFormat:\nSubject: [subject]\n\n[body]\n\n${jd?'JD: '+jd.slice(0,500):''}${context?'\nContext: '+context:''}${state.resume?'\nBackground: '+state.resume.slice(0,400):''}`,document.getElementById('out-email'));
+  }
+  if(wantLinkedIn){
+    document.getElementById('out-linkedin-wrap').style.display='block';
+    const liOut=document.getElementById('out-linkedin');
+    await callClaude(system,`Write a LinkedIn DM to ${contactName||'the hiring manager'} at ${company||'the company'}. STRICT 300 character limit. Hook first line. One specific company mention. One relevance line. Soft ask. Casual tone. Output only the DM.\n\n${context?'Context: '+context:''}${state.resume?'\nBackground: '+state.resume.slice(0,300):''}`,liOut);
+    setTimeout(()=>{const txt=liOut.textContent;const countEl=document.getElementById('out-li-charcount');if(countEl){const c=txt.length;countEl.textContent=`${c} chars ${c<=300?'✓ fits limit':'⚠ '+(c-300)+' over limit'}`;countEl.style.color=c<=300?'var(--success)':'var(--accent3)';}},200);
+  }
+  if(wantConnection){
+    document.getElementById('out-connection-wrap').style.display='block';
+    const connOut=document.getElementById('out-connection');
+    await callClaude(system,`Write a LinkedIn connection note. STRICT 200 character limit. Specific about why connecting. Reference company or role. Warm, human. Fragments fine. Output only the note.\n\nCompany: ${company||''} Role: ${role||''}`,connOut);
+    setTimeout(()=>{const txt=connOut.textContent;const countEl=document.getElementById('out-conn-charcount');if(countEl){const c=txt.length;countEl.textContent=`${c} chars ${c<=200?'✓ fits limit':'⚠ '+(c-200)+' over limit'}`;countEl.style.color=c<=200?'var(--success)':'var(--accent3)';}},200);
+  }
+  btn.disabled=false; btn.innerHTML='<span>Regenerate</span>';
+};
+
+window.refineOutreach = async function() {
+  const feedback=document.getElementById('out-feedback')?.value.trim()||'';
+  const presets=(window._outreachPresets||[]).join(', ');
+  if(!feedback&&!presets){alert('Add feedback or select a preset first.');return;}
+  const instructions=[presets,feedback].filter(Boolean).join('. ');
+  const system=`You are an expert at refining cold outreach. Apply requested changes precisely while keeping what works.`;
+  if(document.getElementById('out-email-wrap')?.style.display!=='none'){
+    const current=document.getElementById('out-email')?.textContent||'';
+    const emailEl=document.getElementById('out-email'); emailEl.innerHTML='<span class="cursor"></span>'; emailEl.classList.add('loading');
+    await callClaude(system,`Refine this cold email. Keep what works, only change what's asked.\n\nCurrent email:\n${current}\n\nFeedback: ${instructions}\n\nOutput revised email only.`,emailEl);
+  }
+  if(document.getElementById('out-linkedin-wrap')?.style.display!=='none'){
+    const current=document.getElementById('out-linkedin')?.textContent||'';
+    const liEl=document.getElementById('out-linkedin'); liEl.innerHTML='<span class="cursor"></span>'; liEl.classList.add('loading');
+    await callClaude(system,`Refine this LinkedIn DM. Keep under 300 chars.\n\nCurrent:\n${current}\n\nFeedback: ${instructions}\n\nOutput revised DM only.`,liEl);
+    setTimeout(()=>{const txt=liEl.textContent;const c=txt.length;const countEl=document.getElementById('out-li-charcount');if(countEl){countEl.textContent=`${c} chars ${c<=300?'✓ fits':'⚠ '+(c-300)+' over'}`;countEl.style.color=c<=300?'var(--success)':'var(--accent3)';}},200);
+  }
+};
+
+window.logOutreachToTracker = function() {
+  const name=document.getElementById('log-contact-name')?.value.trim()||'';
+  const title=document.getElementById('log-contact-title')?.value.trim()||'';
+  const email=document.getElementById('log-contact-email')?.value.trim()||'';
+  const liUrl=document.getElementById('log-contact-linkedin')?.value.trim()||'';
+  const channel=document.getElementById('log-contact-channel')?.value||'LinkedIn DM';
+  const date=document.getElementById('log-contact-date')?.value||new Date().toISOString().split('T')[0];
+  const note=document.getElementById('log-contact-note')?.value.trim()||'';
+  if(!name&&!title){alert('Please enter at least a contact name or title before logging.');return;}
+  const contact={cid:Date.now(),name:name||'(unnamed)',title,email,linkedinUrl:liUrl,channel,date,note,followedUp:false,source:'outreach'};
+  if(!state.applications) state.applications=[];
+  let targetApp=null;
+  const linkedId=window._linkedAppId;
+  if(linkedId){
+    targetApp=(state.applications||[]).find(a=>a.id===linkedId);
+    if(targetApp){if(!targetApp.contacts)targetApp.contacts=[];targetApp.contacts.unshift(contact);if(targetApp.status==='To Apply')targetApp.status='Outreach Sent';}
+  } else {
+    const company=document.getElementById('out-company')?.value.trim()||'Unknown Company';
+    const role=document.getElementById('out-role')?.value.trim()||'Unknown Role';
+    const jd=document.getElementById('out-jd')?.value.trim()||'';
+    targetApp={id:Date.now()+1,company,role,jd,status:'Outreach Sent',notes:`Outreach sent to ${contact.name}${contact.title?' ('+contact.title+')':''}`,contacts:[contact],analysisResult:'',tailoredResume:'',coverLetter:'',rescoreResult:'',rescoreResume:'',stage:'outreach',dateAdded:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+    state.applications.unshift(targetApp);
+    window._linkedAppId=targetApp.id;
+  }
+  const confirmEl=document.getElementById('log-outreach-confirm');
+  const btn=document.getElementById('log-outreach-btn');
+  const channelIcon={Email:'📧','LinkedIn DM':'💬','LinkedIn Connection':'🤝',Phone:'📞',Referral:'👋','In Person':'🤝',Other:'💬'}[channel]||'💬';
+  if(confirmEl){
+    confirmEl.style.display='block';
+    confirmEl.innerHTML=`<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:rgba(126,203,161,0.08);border:1px solid rgba(126,203,161,0.3);border-radius:10px"><div style="font-size:1.3rem">✅</div><div style="flex:1"><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.88rem;margin-bottom:4px">Contact logged to ${targetApp.company}</div><div style="font-size:0.78rem;color:var(--text-muted);line-height:1.6">${channelIcon} <strong>${contact.name}${contact.title?' · '+contact.title:''}</strong> via ${channel}${email?'<br>📧 '+email:''}${liUrl?'<br>🔗 <a href="'+(liUrl.startsWith('http')?liUrl:'https://'+liUrl)+'" target="_blank" style="color:var(--accent2)">'+liUrl+'</a>':''}<br>📅 ${date}${note?'<br>💬 "'+note+'"':''}</div><div style="margin-top:10px;display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="showModule('tracker')">View in Tracker →</button><button class="btn btn-secondary btn-sm" onclick="logAnotherContact()">+ Log Another Contact</button></div></div></div>`;
+  }
+  if(btn){btn.textContent='✓ Logged';btn.style.background='rgba(126,203,161,0.15)';btn.style.borderColor='rgba(126,203,161,0.4)';btn.style.color='#7ecba1';setTimeout(()=>{btn.textContent='📋 Log Another Contact';btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.onclick=logAnotherContact;},2000);}
+  showToast('✓ Contact logged → '+targetApp.company);
+};
+
+window.logAnotherContact = function() {
+  ['log-contact-name','log-contact-title','log-contact-email','log-contact-linkedin','log-contact-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const confirmEl=document.getElementById('log-outreach-confirm');if(confirmEl)confirmEl.style.display='none';
+  const btn=document.getElementById('log-outreach-btn');if(btn){btn.textContent='📋 Log to App Tracker';btn.onclick=logOutreachToTracker;}
+  document.getElementById('out-log-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+};
+</script>
+
+
+<script>
+// ═══ MODULE: APP TRACKER + CONTACT LOG ═══════════════════════════════════════
+window.renderAppTracker = function() {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const nav=document.getElementById('nav-tracker'); if(nav) nav.classList.add('active');
+  const apps=state.applications||[];
+  const statuses=['To Apply','Applied','Outreach Sent','Interview','Offer','Rejected','Archived'];
+  const statusColors={
+    'To Apply':      {bg:'rgba(89,165,216,0.1)', border:'rgba(89,165,216,0.3)', text:'#59a5d8'},
+    'Applied':       {bg:'rgba(255,193,94,0.1)', border:'rgba(255,193,94,0.3)', text:'#ffc15e'},
+    'Outreach Sent': {bg:'rgba(224,251,252,0.08)',border:'rgba(224,251,252,0.2)',text:'#e0fbfc'},
+    'Interview':     {bg:'rgba(126,203,161,0.1)', border:'rgba(126,203,161,0.3)',text:'#7ecba1'},
+    'Offer':         {bg:'rgba(126,203,161,0.2)', border:'rgba(126,203,161,0.5)',text:'#7ecba1'},
+    'Rejected':      {bg:'rgba(224,122,95,0.08)', border:'rgba(224,122,95,0.25)',text:'#e07a5f'},
+    'Archived':      {bg:'rgba(133,117,110,0.08)',border:'rgba(133,117,110,0.2)', text:'#85756e'}
+  };
+  const sc={}; statuses.forEach(s=>sc[s]=(apps.filter(a=>a.status===s).length));
+  const activeApps=apps.filter(a=>a.status!=='Archived'&&a.status!=='Rejected');
+  window._trackerStatusColors=statusColors; window._trackerStatuses=statuses;
+  const el=document.getElementById('main-content');
+  el.innerHTML=`
+    <div class="fade-in">
+      <div class="module-header">
+        <div class="module-tag">// MODULE 06</div>
+        <div class="module-title">Application Tracker</div>
+        <p class="module-desc">Every role you've logged — status tracking, notes, contacts, and quick access to all generated content.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:24px">
+        <div class="score-card" style="text-align:center"><div class="score-label">Total</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;color:var(--text)">${apps.length}</div></div>
+        <div class="score-card" style="text-align:center"><div class="score-label">Active</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;color:var(--accent2)">${activeApps.length}</div></div>
+        <div class="score-card" style="text-align:center"><div class="score-label">Interviews</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;color:var(--success)">${sc['Interview']||0}</div></div>
+        <div class="score-card" style="text-align:center"><div class="score-label">Offers</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;color:var(--success)">${sc['Offer']||0}</div></div>
+        <div class="score-card" style="text-align:center"><div class="score-label">Rejected</div><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;color:var(--accent3)">${sc['Rejected']||0}</div></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px"><input type="text" id="tracker-search" placeholder="🔍 Search company, role..." oninput="filterTracker()" style="width:100%;padding:9px 14px;font-size:0.83rem" /></div>
+        <select id="tracker-filter" onchange="filterTracker()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 14px;font-size:0.83rem;font-family:'DM Sans',sans-serif;cursor:pointer">
+          <option value="all">All Statuses</option>${statuses.map(s=>`<option value="${s}">${s} (${sc[s]||0})</option>`).join('')}
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="showAddAppModal()">+ Add Manually</button>
+      </div>
+      <div id="tracker-list">
+        ${apps.length===0?`<div style="text-align:center;padding:60px 20px;color:var(--text-dim)"><div style="font-size:2.5rem;margin-bottom:12px">📭</div><div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:8px">No applications logged yet</div><div style="font-size:0.83rem">Use the flow to analyze a role and hit "Log Application" — it'll appear here.</div><button class="btn btn-primary" style="margin-top:20px" onclick="startNewFlow()">Start a New Role →</button></div>`:apps.map(app=>renderAppCard(app,statusColors,statuses)).join('')}
+      </div>
+    </div>`;
+};
+
+window.renderAppCard = function(app, statusColors, statuses) {
+  const sc=statusColors[app.status]||statusColors['To Apply'];
+  const hasResume=!!app.tailoredResume, hasCover=!!app.coverLetter, hasAnalysis=!!app.analysisResult;
+  const contacts=app.contacts||[];
+  const pendingFollowUp=contacts.filter(c=>!c.followedUp).length;
+  const rescoreMatch=app.rescoreResult?.match(/Overall:\s*(\d+)\/100/i);
+  const analysisMatch=app.analysisResult?.match(/Overall:\s*(\d+)\/100/i);
+  const atsScore=rescoreMatch?rescoreMatch[1]:(analysisMatch?analysisMatch[1]:null);
+  const atsIsRescore=!!rescoreMatch;
+  return `<div class="app-card" id="app-${app.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:12px;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem">${app.company||'Unknown Company'}</div>
+          ${atsScore?`<div title="${atsIsRescore?'Re-scored':'From analysis'}" style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--accent);border:1px solid rgba(255,193,94,0.3);padding:2px 7px;border-radius:10px">${atsIsRescore?'📊 ':''} ATS ${atsScore}/100${atsIsRescore?' <span style="font-size:0.55rem;opacity:0.7">re-scored</span>':''}</div>`:''}
+          ${pendingFollowUp>0?`<div id="followup-dot-${app.id}" style="display:inline-block;background:rgba(224,122,95,0.15);border:1px solid rgba(224,122,95,0.4);border-radius:10px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:0.58rem;color:#e07a5f">↪ ${pendingFollowUp} follow-up${pendingFollowUp>1?'s':''}</div>`:`<div id="followup-dot-${app.id}" style="display:none"></div>`}
+        </div>
+        <div style="font-size:0.83rem;color:var(--text-muted);margin-bottom:8px">${app.role||'Unknown Role'}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          ${hasAnalysis?'<span class="pill blue">📊 Analyzed</span>':''}
+          ${hasResume?'<span class="pill yellow">📄 Resume</span>':''}
+          ${hasCover?'<span class="pill green">✉️ Cover</span>':''}
+          ${app.rescoreResult?'<span class="pill" style="background:rgba(255,193,94,0.1);color:var(--accent);border:1px solid rgba(255,193,94,0.25)">📊 Re-scored</span>':''}
+          ${contacts.length>0?`<span class="pill" style="background:rgba(133,117,110,0.12);color:#85756e;border:1px solid rgba(133,117,110,0.25)">👤 <span id="contact-badge-${app.id}">${contacts.length}</span> contact${contacts.length>1?'s':''}</span>`:`<span id="contact-badge-${app.id}" style="display:none"></span>`}
+        </div>
+        ${app.notes?`<div style="margin-top:8px;font-size:0.78rem;color:var(--text-muted);font-style:italic">${app.notes}</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">
+        <select onchange="updateAppStatus(${app.id},this.value)" style="background:${sc.bg};border:1px solid ${sc.border};color:${sc.text};border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:0.65rem;font-weight:600;cursor:pointer;letter-spacing:0.05em;outline:none">
+          ${statuses.map(s=>`<option value="${s}" ${s===app.status?'selected':''}>${s}</option>`).join('')}
+        </select>
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--text-dim)">${app.dateAdded}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn btn-secondary btn-sm" onclick="toggleContactLog(${app.id})" id="contact-log-btn-${app.id}" style="font-size:0.7rem;padding:5px 10px">👤 Contacts</button>
+          <button class="btn btn-secondary btn-sm" onclick="expandApp(${app.id})" style="font-size:0.7rem;padding:5px 10px">View Content</button>
+          <button class="btn btn-secondary btn-sm" onclick="editAppNotes(${app.id})" style="font-size:0.7rem;padding:5px 10px">Notes</button>
+          <button class="btn btn-secondary btn-sm" onclick="deleteApp(${app.id})" style="font-size:0.7rem;padding:5px 10px;color:var(--accent3);border-color:rgba(224,122,95,0.3)">✕</button>
+        </div>
+      </div>
+    </div>
+    <div id="contact-log-${app.id}" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;margin-bottom:14px">👤 Contact Log</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">Log New Contact</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="field" style="margin-bottom:0"><div class="field-label">Name</div><input type="text" id="c-name-${app.id}" placeholder="e.g. Sarah Chen" style="font-size:0.8rem" /></div>
+          <div class="field" style="margin-bottom:0"><div class="field-label">Title / Role</div><input type="text" id="c-title-${app.id}" placeholder="e.g. Head of Product Ops" style="font-size:0.8rem" /></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="field" style="margin-bottom:0"><div class="field-label">Channel</div>
+            <select id="c-channel-${app.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.8rem">
+              <option>LinkedIn DM</option><option>Email</option><option>LinkedIn Connection</option><option>Phone</option><option>Referral</option><option>In Person</option><option>Other</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0"><div class="field-label">Date Contacted</div><input type="date" id="c-date-${app.id}" value="${new Date().toISOString().split('T')[0]}" /></div>
+        </div>
+        <div class="field" style="margin-bottom:10px"><div class="field-label">Note <span style="color:var(--text-dim)">(optional)</span></div><input type="text" id="c-note-${app.id}" placeholder="e.g. Sent email, waiting for reply..." style="font-size:0.8rem" /></div>
+        <button class="btn btn-primary btn-sm" onclick="addContactEntry(${app.id})">+ Log Contact</button>
+      </div>
+      <div id="contact-list-${app.id}"><div style="font-size:0.78rem;color:var(--text-dim);padding:8px 0">No contacts logged yet.</div></div>
+    </div>
+    <div id="app-expand-${app.id}" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div class="tabs" style="margin-bottom:16px">
+        ${hasAnalysis?`<div class="tab active" onclick="switchAppTab(${app.id},'analysis',this)">Analysis</div>`:''}
+        ${app.rescoreResult?`<div class="tab" onclick="switchAppTab(${app.id},'rescore',this)">Re-Score</div>`:''}
+        ${hasResume?`<div class="tab ${!hasAnalysis?'active':''}" onclick="switchAppTab(${app.id},'resume',this)">Resume</div>`:''}
+        ${hasCover?`<div class="tab" onclick="switchAppTab(${app.id},'cover',this)">Cover Letter</div>`:''}
+        ${app.jd?`<div class="tab" onclick="switchAppTab(${app.id},'jd',this)">JD</div>`:''}
+      </div>
+      <div id="app-tab-${app.id}" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:0.82rem;line-height:1.7;white-space:pre-wrap;max-height:300px;overflow-y:auto;color:var(--text)">
+        ${hasAnalysis?app.analysisResult:hasResume?app.tailoredResume:app.coverLetter||''}
+      </div>
+      <div class="copy-row">
+        <button class="btn btn-secondary btn-sm" id="app-copy-${app.id}" onclick="copyAppTab(${app.id})">Copy</button>
+        ${hasResume||hasCover?`<button class="btn btn-secondary btn-sm" onclick="continueFromApp(${app.id})">Continue in Flow →</button>`:''}
+      </div>
+    </div>
+  </div>`;
+};
+
+window.filterTracker = function() {
+  const search=(document.getElementById('tracker-search')?.value||'').toLowerCase();
+  const filter=document.getElementById('tracker-filter')?.value||'all';
+  const apps=state.applications||[];
+  const filtered=apps.filter(a=>{
+    const matchSearch=!search||(a.company||'').toLowerCase().includes(search)||(a.role||'').toLowerCase().includes(search);
+    const matchStatus=filter==='all'||a.status===filter;
+    return matchSearch&&matchStatus;
+  });
+  const list=document.getElementById('tracker-list'); if(!list) return;
+  if(filtered.length===0){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-dim)">No applications match your filter.</div>';return;}
+  list.innerHTML=filtered.map(a=>renderAppCard(a,window._trackerStatusColors,window._trackerStatuses)).join('');
+};
+
+window.updateAppStatus = function(id,newStatus) {
+  const app=(state.applications||[]).find(a=>a.id===id); if(!app) return;
+  app.status=newStatus;
+  const sc=(window._trackerStatusColors||{})[newStatus]||{};
+  const sel=document.querySelector(`#app-${id} select`);
+  if(sel&&sc.bg){sel.style.background=sc.bg;sel.style.borderColor=sc.border;sel.style.color=sc.text;}
+  showToast('✓ '+app.company+' → '+newStatus);
+};
+
+window.expandApp = function(id) {
+  const wrap=document.getElementById(`app-expand-${id}`); if(!wrap) return;
+  const isOpen=wrap.style.display!=='none';
+  wrap.style.display=isOpen?'none':'block';
+  const btn=document.querySelector(`#app-${id} button[onclick*="expandApp"]`);
+  if(btn) btn.textContent=isOpen?'View Content':'Hide Content';
+};
+
+window.switchAppTab = function(id,tab,btn) {
+  const app=(state.applications||[]).find(a=>a.id===id); if(!app) return;
+  const content={analysis:app.analysisResult,rescore:app.rescoreResult,resume:app.tailoredResume,cover:app.coverLetter,jd:app.jd};
+  const tabEl=document.getElementById(`app-tab-${id}`); if(tabEl) tabEl.textContent=content[tab]||'(No content)';
+  document.querySelectorAll(`#app-expand-${id} .tab`).forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+};
+
+window.copyAppTab = function(id) {
+  const tabEl=document.getElementById(`app-tab-${id}`); if(!tabEl) return;
+  navigator.clipboard.writeText(tabEl.textContent).then(()=>{const btn=document.getElementById(`app-copy-${id}`);if(btn){btn.textContent='✓ Copied';setTimeout(()=>btn.textContent='Copy',1500);}});
+};
+
+window.editAppNotes = function(id) {
+  const app=(state.applications||[]).find(a=>a.id===id); if(!app) return;
+  const card=document.getElementById(`app-${id}`);
+  const existing=document.getElementById(`notes-edit-${id}`);
+  if(existing){existing.remove();return;}
+  const notesDiv=document.createElement('div'); notesDiv.id=`notes-edit-${id}`;
+  notesDiv.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--border)';
+  notesDiv.innerHTML=`<div class="field-label" style="margin-bottom:6px">Notes</div><textarea id="notes-input-${id}" rows="2" style="width:100%;font-size:0.82rem">${app.notes||''}</textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-primary btn-sm" onclick="saveAppNotes(${id})">Save</button><button class="btn btn-secondary btn-sm" onclick="document.getElementById('notes-edit-${id}').remove()">Cancel</button></div>`;
+  card.appendChild(notesDiv);
+};
+
+window.saveAppNotes = function(id) {
+  const app=(state.applications||[]).find(a=>a.id===id); if(!app) return;
+  app.notes=document.getElementById(`notes-input-${id}`)?.value||'';
+  document.getElementById(`notes-edit-${id}`)?.remove();
+  showToast('✓ Notes saved');
+};
+
+window.deleteApp = function(id) {
+  if(!confirm('Remove this application from your tracker?')) return;
+  state.applications=(state.applications||[]).filter(a=>a.id!==id);
+  renderAppTracker();
+  showToast('Application removed');
+};
+
+window.continueFromApp = function(id) {
+  const app=(state.applications||[]).find(a=>a.id===id); if(!app) return;
+  state.flow={active:true,jd:app.jd,company:app.company,roleTitle:app.role,analysisResult:app.analysisResult,tailoredResume:app.tailoredResume,coverLetter:app.coverLetter,rescoreResult:app.rescoreResult||'',rescoreResume:app.rescoreResume||'',step:'cover',coverVersions:[],selectedPresets:[]};
+  showFlowStep('cover');
+};
+
+window.showAddAppModal = function() {
+  document.getElementById('add-app-modal')?.remove();
+  const modal=document.createElement('div'); modal.id='add-app-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;margin-bottom:20px">➕ Add Application Manually</div><div class="two-col"><div class="field"><div class="field-label">Company *</div><input type="text" id="m-company" placeholder="e.g. Notion" /></div><div class="field"><div class="field-label">Role Title *</div><input type="text" id="m-role" placeholder="e.g. Director of Product Ops" /></div></div><div class="field"><div class="field-label">Status</div><select id="m-status" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;width:100%;font-family:'DM Sans',sans-serif;font-size:0.85rem">${['To Apply','Applied','Outreach Sent','Interview','Offer','Rejected','Archived'].map(s=>`<option>${s}</option>`).join('')}</select></div><div class="field"><div class="field-label">Notes</div><textarea id="m-notes" rows="2" placeholder="Any notes..."></textarea></div><div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-primary" onclick="saveManualApp()">Add Application</button><button class="btn btn-secondary" onclick="document.getElementById('add-app-modal').remove()">Cancel</button></div></div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+};
+
+window.saveManualApp = function() {
+  const company=document.getElementById('m-company')?.value.trim()||'';
+  const role=document.getElementById('m-role')?.value.trim()||'';
+  if(!company||!role){alert('Company and Role are required.');return;}
+  const app={id:Date.now(),company,role,status:document.getElementById('m-status')?.value||'To Apply',notes:document.getElementById('m-notes')?.value||'',jd:'',analysisResult:'',tailoredResume:'',coverLetter:'',rescoreResult:'',rescoreResume:'',contacts:[],stage:'manual',dateAdded:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+  if(!state.applications) state.applications=[];
+  state.applications.unshift(app);
+  document.getElementById('add-app-modal')?.remove();
+  renderAppTracker();
+  showToast('✓ '+company+' — '+role+' added');
+};
+
+window.toggleContactLog = function(id) {
+  const wrap=document.getElementById(`contact-log-${id}`), btn=document.getElementById(`contact-log-btn-${id}`);
+  if(!wrap) return;
+  const isOpen=wrap.style.display!=='none';
+  wrap.style.display=isOpen?'none':'block';
+  if(btn) btn.textContent=isOpen?'👤 Contacts':'👤 Hide Contacts';
+  if(!isOpen) renderContactList(id);
+};
+
+window.addContactEntry = function(id) {
+  const app=(state.applications||[]).find(a=>a.id===id); if(!app) return;
+  if(!app.contacts) app.contacts=[];
+  const name=document.getElementById(`c-name-${id}`)?.value.trim()||'';
+  const title=document.getElementById(`c-title-${id}`)?.value.trim()||'';
+  const channel=document.getElementById(`c-channel-${id}`)?.value||'LinkedIn DM';
+  const date=document.getElementById(`c-date-${id}`)?.value||new Date().toISOString().split('T')[0];
+  const note=document.getElementById(`c-note-${id}`)?.value.trim()||'';
+  if(!name&&!title){alert('Add at least a name or title.');return;}
+  app.contacts.unshift({cid:Date.now(),name:name||'(unnamed)',title,email:'',linkedinUrl:'',channel,date,note,followedUp:false});
+  renderContactList(id);
+  ['c-name-','c-title-','c-note-'].forEach(p=>{const el=document.getElementById(p+id);if(el)el.value='';});
+  showToast('✓ Contact logged for '+app.company);
+};
+
+window.deleteContact = function(appId,cid) {
+  const app=(state.applications||[]).find(a=>a.id===appId); if(!app) return;
+  app.contacts=(app.contacts||[]).filter(c=>c.cid!==cid);
+  renderContactList(appId);
+};
+
+window.toggleFollowUp = function(appId,cid) {
+  const app=(state.applications||[]).find(a=>a.id===appId); if(!app) return;
+  const contact=(app.contacts||[]).find(c=>c.cid===cid); if(!contact) return;
+  contact.followedUp=!contact.followedUp;
+  renderContactList(appId);
+};
+
+window.renderContactList = function(id) {
+  const app=(state.applications||[]).find(a=>a.id===id);
+  const listEl=document.getElementById(`contact-list-${id}`);
+  if(!listEl||!app) return;
+  const channelIcons={Email:'📧',LinkedIn:'💼','LinkedIn DM':'💬','LinkedIn Connection':'🤝',Phone:'📞',Referral:'👋','In Person':'🤝',Other:'💬'};
+  const contacts=app.contacts||[];
+  if(contacts.length===0){listEl.innerHTML='<div style="font-size:0.78rem;color:var(--text-dim);padding:8px 0">No contacts logged yet.</div>';const badge=document.getElementById(`contact-badge-${id}`);if(badge)badge.style.display='none';return;}
+  listEl.innerHTML=contacts.map(c=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:0.82rem"><div style="font-size:1.1rem;flex-shrink:0;margin-top:1px">${channelIcons[c.channel]||'💬'}</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong style="color:var(--text)">${c.name}</strong>${c.title?`<span style="font-size:0.72rem;color:var(--text-muted)">${c.title}</span>`:''}<span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--accent2);border:1px solid rgba(89,165,216,0.3);padding:1px 7px;border-radius:10px">${c.channel}</span><span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--text-dim);margin-left:auto">${c.date}</span></div>${(c.email||c.linkedinUrl)?`<div style="margin-top:4px;display:flex;gap:10px;flex-wrap:wrap">${c.email?`<a href="mailto:${c.email}" style="font-size:0.72rem;color:var(--accent2);text-decoration:none">📧 ${c.email}</a>`:''}${c.linkedinUrl?`<a href="${c.linkedinUrl.startsWith('http')?c.linkedinUrl:'https://'+c.linkedinUrl}" target="_blank" style="font-size:0.72rem;color:var(--accent2);text-decoration:none">🔗 LinkedIn</a>`:''}</div>`:''}${c.note?`<div style="margin-top:4px;color:var(--text-muted);font-style:italic;font-size:0.78rem">"${c.note}"</div>`:''}${c.source==='outreach'?'<div style="margin-top:3px;font-family:\'DM Mono\',monospace;font-size:0.58rem;color:var(--text-dim)">via Cold Outreach module</div>':''}</div><div style="display:flex;gap:6px;flex-shrink:0;align-items:center"><button onclick="toggleFollowUp(${id},${c.cid})" style="background:${c.followedUp?'rgba(126,203,161,0.15)':'var(--surface2)'};border:1px solid ${c.followedUp?'rgba(126,203,161,0.4)':'var(--border)'};border-radius:20px;padding:3px 9px;font-size:0.62rem;font-family:'DM Mono',monospace;color:${c.followedUp?'#7ecba1':'var(--text-muted)'};cursor:pointer;white-space:nowrap">${c.followedUp?'✓ Followed Up':'↪ Follow Up'}</button><button onclick="deleteContact(${id},${c.cid})" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.85rem;padding:3px 5px">✕</button></div></div>`).join('');
+  const badge=document.getElementById(`contact-badge-${id}`); if(badge){badge.textContent=contacts.length;badge.style.display='inline-flex';}
+  const pending=contacts.filter(c=>!c.followedUp).length;
+  const dot=document.getElementById(`followup-dot-${id}`);
+  if(dot){dot.style.display=pending>0?'inline-block':'none';dot.textContent=`↪ ${pending} follow-up${pending>1?'s':''}`;}
+};
+</script>
+
+
+<script>
+// ═══ LOCALSTORAGE PERSISTENCE ════════════════════════════════════════════════
+const LS_KEY = 'jobhunteros_v1';
+
+window.saveState = function() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      profile:       state.profile       || {},
+      resume:        state.resume        || '',
+      coverLetter:   state.coverLetter   || '',
+      experienceBank:state.experienceBank|| '',
+      applications:  state.applications  || [],
+    }));
+  } catch(e) { console.warn('saveState failed:', e); }
+};
+
+window.loadState = function() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.profile)        state.profile        = s.profile;
+    if (s.resume)         state.resume         = s.resume;
+    if (s.coverLetter)    state.coverLetter    = s.coverLetter;
+    if (s.experienceBank) state.experienceBank = s.experienceBank;
+    if (s.applications)   state.applications   = s.applications;
+  } catch(e) { console.warn('loadState failed:', e); }
+};
+
+// Auto-save hooks — patch after all modules are defined
+document.addEventListener('DOMContentLoaded', function() {
+  loadState();
+  updateResumeStatus && updateResumeStatus();
+
+  const wrap = (fn) => { const orig = window[fn]; if (typeof orig === 'function') window[fn] = function(...a) { orig(...a); saveState(); }; };
+  ['saveSetup','logApplicationQuick','updateAppStatus','saveAppNotes',
+   'addContactEntry','logOutreachToTracker','toggleFollowUp',
+   'deleteContact','deleteApp','saveManualApp'].forEach(wrap);
+});
+</script>
+
+</body>
+</html>
+
